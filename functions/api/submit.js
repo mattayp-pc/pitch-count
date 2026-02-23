@@ -11,7 +11,7 @@ export async function onRequestPost({ request, env }) {
 
     // Choose which spreadsheet to write to (example)
     const sheetId = body.type === 'dispute' ? env.DISPUTES_SHEET_ID : env.MAIN_SHEET_ID;
-    const tabName = body.type === 'dispute' ? (env.DISPUTES_TAB || 'Disputes') : (env.MAIN_TAB || 'Submissions');
+    const tabName = body.type === 'dispute' ? (env.DISPUTES_TAB || 'Disputes') : (env.MAIN_TAB || 'MAIN_TAB');
 
     // Build a row (customize columns as you like)
     const row = [
