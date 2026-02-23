@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="UTF-8" />
+    <title>NIAA Baseball Pitch Count Dispute</title>
+
+    <style>
+      :root {
+        --bg: #f7f7fb;
+        --bg-container: #d0d4d9;
+        --card: #ffffff;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --accent: #0f766e;
+        --accent-2: #2563eb;
+        --ring: rgba(37, 99, 235, 0.25);
+        --radius: 16px;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+        color: var(--text);
+        background: url(https://d2o2figo6ddd0g.cloudfront.net/n/s/bp91ord6e5kl8/page_bg.jpg) repeat-x left top #000001;
+      }
+      .container {
+        max-width: 1200px; /* was 1100px */
+        margin: 24px auto 50px;
+        padding: 0 10px;
+      }
+
+      /* Header */
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0px;
+        background: var(--card);
+        border-radius: var(--radius);
+        box-shadow: 0 2px 16px rgba(0,0,0,0.05);
+      }
+      .header img {
+        height: 150px;
+        width: auto;
+        border-radius: 8px;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: clamp(1.2rem, 2.2vw + 0.5rem, 1.9rem);
+        text-align: center;
+        line-height: 1.2;
+      }
+
+      /* Controls row (radio groups) */
+      .controls-row {
+        margin-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+      }
+
+      .text-input, .number-input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 12px;
+        font-size: .95rem;
+        outline: none;
+        background: #fff;
+      }
+      .text-input:focus, .number-input:focus {
+        border-color: var(--accent-2);
+        box-shadow: 0 0 0 4px var(--ring);
+      }
+
+      fieldset {
+        position: relative;
+        padding: 20px 14px 12px 14px;
+        margin: 0;
+        border: 1px solid #e5e7eb;
+        background: var(--card);
+        border-radius: var(--radius);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+      }
+      legend {
+        position: absolute;
+        top: 0px;
+        font-weight: bold;
+        padding: 0 6px;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+      .radio-line {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+      }
+      .radio-line label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 999px;
+        cursor: pointer;
+        user-select: none;
+      }
+      .radio-line input[type="radio"] { accent-color: var(--accent-2); }
+
+      .panels {
+        margin-top: 18px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      @media (max-width: 960px) { .panels { grid-template-columns: 1fr; } }
+
+      .panel {
+        background: var(--card);
+        border: 1px solid #e5e7eb;
+        border-radius: var(--radius);
+        padding: 16px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+      }
+      .panel h2 {
+        margin: 0 0 10px 0;
+        font-size: 1.1rem;
+        color: var(--accent);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px;
+      }
+      @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+
+      label.select-label {
+        display: block;
+        font-size: 0.9rem;
+        margin-bottom: 6px;
+        color: var(--muted);
+      }
+      select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 12px;
+        background: #fff;
+        font-size: 0.95rem;
+        outline: none;
+      }
+      select:focus {
+        border-color: var(--accent-2);
+        box-shadow: 0 0 0 4px var(--ring);
+      }
+
+      .game-heading {
+        margin-top: 3px;
+        margin-bottom: -10px;
+      }
+
+      .note {
+        margin-top: 8px;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      .inner-container {
+        padding: 10px 10px 10px 10px;
+        border-radius: 12px;
+        background: var(--bg-container);
+      }
+
+      .pitcher-row {
+        display: grid;
+        grid-template-columns: 255px 128px 75px;
+        gap: 12px;
+        margin-bottom: 8px;
+      }
+      @media (max-width: 640px) {
+        .pitcher-row { grid-template-columns: 1fr; }
+      }
+
+      .number-input, .player-select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 12px;
+        font-size: .95rem;
+        outline: none;
+        background: #fff;
+      }
+      .number-input {
+        width: 128px;
+      }
+      .player-select {
+        width: 255px;
+      }
+      .number-input:focus, .player-select:focus {
+        border-color: var(--accent-2);
+        box-shadow: 0 0 0 4px var(--ring);
+      }
+
+      .submit-btn {
+        background-color: white;
+        color: black;
+        font-size: 1rem;
+        font-weight: 600;
+        padding: 12px 24px;
+        border: none;
+        border-radius: var(--radius);
+        cursor: pointer;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+      .submit-btn:hover {
+        background-color: var(--accent);
+        color: white;
+      }
+      .submit-btn:active {
+        transform: translateY(1px);
+      }
+      .dispute-note-input, .missing-note-input {
+        font-family: "Arial";
+        height: 40px;
+        max-width: 100%;
+      }
+      .hidden { display: none !important; }
+
+      #overlay {
+        display: flex;
+        position: fixed;
+        inset: 0;
+        justify-content: center;
+        align-items: center;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 23, 42, 0.55);
+        z-index: 9999;
+        --ball-size: 18vh;
+        --overlay-font-size: 3vh;
+      }
+
+      #ball-and-text-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0px;
+        text-align: center;
+      }
+
+      #overlay .baseball {
+        --ball-size: 18vh;
+      }
+
+      #overlay .overlay-text {
+        color: white;
+        text-align: center;
+        text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.8);
+        font-size: 4vh;
+        display: flex;
+        justify-content: center;
+        width: 100%;
+      }
+
+      /* Popover styling */
+      #overlay .popover {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        min-width: 260px;
+        max-width: 90vw;
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 16px 20px 18px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+      }
+
+      #overlay .popover h2 {
+        margin: 0 0 8px;
+        font-size: 1.1rem;
+      }
+
+      #overlay .popover p {
+        margin: 0;
+        font-size: 0.95rem;
+        line-height: 1.4;
+      }
+
+      #overlay .popover-close {
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        border: none;
+        background: transparent;
+        font-size: 1.3rem;
+        font-weight: bold;
+        line-height: 1;
+        color: #e11d48;
+        cursor: pointer;
+      }
+      
+      .baseball {
+        --ball-size: 200px;
+        position: relative;
+        overflow: hidden;
+        width: var(--ball-size);
+        height: var(--ball-size);
+        border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, #ffffff, #dddddd);
+        box-shadow:
+          0 calc(var(--ball-size) * 0.05) calc(var(--ball-size) * 0.125) rgba(0, 0, 0, 0.4),
+          inset 0 0 calc(var(--ball-size) * 0.04) rgba(0, 0, 0, 0.15);
+        animation: ball-spin 3s linear infinite;
+      }
+
+      @keyframes ball-spin {
+        0%   { transform: rotate(0deg); }
+        50%  { transform: rotate(180deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .baseball::before,
+      .baseball::after {
+        content: "";
+        position: absolute;
+        width:  calc(var(--ball-size) * 1.3);
+        height: calc(var(--ball-size) * 1.3);
+        border-radius: 50%;
+        border: calc(var(--ball-size) * 0.015) solid #d11313;
+      }
+
+      .baseball::before {
+        left: calc(var(--ball-size) * 0.7);
+        top:  calc(var(--ball-size) * -0.15);
+        transform: rotate(-25deg);
+      }
+
+      .baseball::after {
+        right: calc(var(--ball-size) * 0.7);
+        top:   calc(var(--ball-size) * -0.15);
+        transform: rotate(25deg);
+      }
+
+      .stitch {
+        position: absolute;
+        width:  calc(var(--ball-size) * 0.11);
+        height: calc(var(--ball-size) * 0.015);
+        background: #d11313;
+        border-radius: 999px;
+      }
+
+      .stitch.left.s1 { top: 16%; left: 14%; transform: rotate(-37deg); }
+      .stitch.left.s2 { top: 22%; left: 17%; transform: rotate(-32deg); }
+      .stitch.left.s3 { top: 28%; left: 20%; transform: rotate(-27deg); }
+      .stitch.left.s4 { top: 34%; left: 22%; transform: rotate(-22deg); }
+      .stitch.left.s5 { top: 40.5%; left: 23%; transform: rotate(-16deg); }
+      .stitch.left.s6 { top: 47%; left: 23.75%; transform: rotate(-10deg); }
+      .stitch.left.s7 { top: 53.5%; left: 24%; transform: rotate(-5deg); }
+      .stitch.left.s8 { top: 60%; left: 23.5%; transform: rotate(0deg); }
+      .stitch.left.s9 { top: 66.5%; left: 22.25%; transform: rotate(6deg); }
+      .stitch.left.s10 { top: 73%; left: 20%; transform: rotate(12deg); }
+      .stitch.left.s11 { top: 79.5%; left: 17%; transform: rotate(19deg); }
+      .stitch.left.s12 { top: 85.5%; left: 14%; transform: rotate(27deg); }
+
+      .stitch.right.s1 { top: 16%; right: 14%; transform: rotate(37deg); }
+      .stitch.right.s2 { top: 22%; right: 17%; transform: rotate(32deg); }
+      .stitch.right.s3 { top: 28%; right: 20%; transform: rotate(27deg); }
+      .stitch.right.s4 { top: 34%; right: 22%; transform: rotate(22deg); }
+      .stitch.right.s5 { top: 40.5%; right: 23%; transform: rotate(16deg); }
+      .stitch.right.s6 { top: 47%; right: 23.75%; transform: rotate(10deg); }
+      .stitch.right.s7 { top: 53.5%; right: 24%; transform: rotate(5deg); }
+      .stitch.right.s8 { top: 60%; right: 23.5%; transform: rotate(0deg); }
+      .stitch.right.s9 { top: 66.5%; right: 22.25%; transform: rotate(-6deg); }
+      .stitch.right.s10 { top: 73%; right: 20%; transform: rotate(-12deg); }
+      .stitch.right.s11 { top: 79.5%; right: 17%; transform: rotate(-19deg); }
+      .stitch.right.s12 { top: 85.5%; right: 14%; transform: rotate(-27deg); }
+
+      /* Dispute-page specific */
+      .single-panel-wrapper { margin-top: 18px; }
+
+      .dispute-header-row {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 6px;
+      }
+
+      .dispute-game-meta {
+        font-size: 0.85rem;
+        color: var(--muted);
+        text-align: right;
+      }
+
+      .pitcher-dispute-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+        padding: 8px 10px;
+        border-radius: 12px;
+        background: #e5e7eb;
+        margin-bottom: 8px;
+      }
+
+      .pitcher-main { min-width: 200px; }
+      .pitcher-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+      }
+      .pitcher-details {
+        font-size: 0.85rem;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+
+      .dispute-extra {
+        width: 100%;
+        margin-top: 6px;
+      }
+
+      .missing-row {
+        margin-top: 10px;
+        font-size: 0.9rem;
+      }
+      .missing-row label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+      }
+
+      .missing-details {
+        margin-top: 8px;
+        padding: 8px;
+        border-radius: 12px;
+        background: #e5e7eb;
+      }
+
+      .missing-entry {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+
+      .add-missing-btn {
+        border: 1px solid #d1d5db;
+        background: #f9fafb;
+        border-radius: 12px;
+        padding: 6px 10px;
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+
+      .submit-row {
+        margin-top: 16px;
+        text-align: center;
+      }
+
+      #statusMessage {
+        margin-top: 8px;
+        font-size: 0.85rem;
+        text-align: center;
+      }
+      #statusMessage.ok { color: #15803d; }
+      #statusMessage.err { color: #b91c1c; }
+      #statusMessage.info { color: var(--muted); }
+
+      .loading-text {
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
+      
+    </style>
+  </head>
+
+  <body>
+    <div id="overlay" class="hidden">
+      <div id="ball-and-text-container">
+        <div class="baseball">
+          <!-- Left stitches -->
+          <span class="stitch left s1"></span>
+          <span class="stitch left s2"></span>
+          <span class="stitch left s3"></span>
+          <span class="stitch left s4"></span>
+          <span class="stitch left s5"></span>
+          <span class="stitch left s6"></span>
+          <span class="stitch left s7"></span>
+          <span class="stitch left s8"></span>
+          <span class="stitch left s9"></span>
+          <span class="stitch left s10"></span>
+          <span class="stitch left s11"></span>
+          <span class="stitch left s12"></span>
+
+          <!-- Right stitches -->
+          <span class="stitch right s1"></span>
+          <span class="stitch right s2"></span>
+          <span class="stitch right s3"></span>
+          <span class="stitch right s4"></span>
+          <span class="stitch right s5"></span>
+          <span class="stitch right s6"></span>
+          <span class="stitch right s7"></span>
+          <span class="stitch right s8"></span>
+          <span class="stitch right s9"></span>
+          <span class="stitch right s10"></span>
+          <span class="stitch right s11"></span>
+          <span class="stitch right s12"></span>
+        </div>
+        <div class="overlay-text">
+          Submitting<br>Please Wait...<br>
+        </div>
+      </div>
+
+      <!-- Result popover -->
+      <div id="submission-popover" class="popover hidden">
+        <button id="popover-close" class="popover-close" type="button">&times;</button>
+        <h2 id="popover-title"></h2>
+        <p id="popover-message"></p>
+      </div>
+    </div>
+
+
+    <div class="container">
+      <header class="header" aria-label="App Header" style="padding: 10px 0px 10px 0px;">
+        <img id="niaa-logo" alt="NIAA logo"
+            src="https://www.niaa.com/design/logos/NIAA_Logo.jpg?max_width=250" />
+        <h1>Baseball Pitch Count Dispute Form</h1>
+      </header>
+
+      <div class="single-panel-wrapper">
+        <div class="panel">
+          <div class="dispute-header-row">
+            <div>
+              <h2>Review pitchers &amp; pitch counts</h2>
+              <p class="note">
+                For each pitcher, choose what you are disputing. Leave the default
+                <strong>“No dispute”</strong> if there is no issue.
+              </p>
+            </div>
+            <div class="dispute-game-meta">
+              <div><strong>Game:</strong> <span id="gameMatchup">Loading…</span></div>
+              <div><strong>Date:</strong> <span id="gameDate">Loading…</span></div>
+            </div>
+          </div>
+
+          <div class="inner-container">
+            <div id="pitchersContainer">
+              <p class="loading-text">Loading pitchers…</p>
+            </div>
+
+            <div class="missing-row">
+              <label>
+                <input type="checkbox" id="missingPitchers" />
+                <span>Dispute missing pitcher(s) not listed above</span>
+              </label>
+
+              <div id="missingPitchersDetails" class="missing-details hidden">
+                <p class="note">
+                  Select the pitcher(s) you believe are missing from your team and their pitch counts.
+                </p>
+                <div id="missingEntries"></div>
+                <button type="button" id="addMissingBtn" class="add-missing-btn">
+                  + Add another missing pitcher
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="submit-row">
+            <button type="button" class="submit-btn" id="submitBtn">
+              Submit Dispute
+            </button>
+          </div>
+
+          <div id="statusMessage" class="note info"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // --- Globals / query info ---
+      let ROSTERS = [];
+      let DISPUTE_CONTEXT = null;
+      let QUERY = {};
+      let VID = "";
+      let SCHOOL_VALUE = "";
+      let COACH_NAME = "";
+      let COACH_EMAIL = "";
+      let SUBMITTING_SCHOOL_VALUE = "";
+
+      // Overlay / popover elements (assigned after DOMContentLoaded)
+      let overlay, overlayText, popover, popoverTitle, popoverMessage, popoverCloseBtn;
+      
+      document.addEventListener("input", function (e) {
+        if (e.target.matches("textarea.dispute-note-input")) {
+          e.target.style.height = "auto";
+          e.target.style.height = e.target.scrollHeight + "px";
+        }
+      });
+
+
+      document.addEventListener("DOMContentLoaded", function () {
+        // Grab overlay/popover elements AFTER DOM exists
+        overlay           = document.getElementById("overlay");
+        overlayText       = document.querySelector("#overlay .overlay-text");
+        popover           = document.getElementById("submission-popover");
+        popoverTitle      = document.getElementById("popover-title");
+        popoverMessage    = document.getElementById("popover-message");
+        popoverCloseBtn   = document.getElementById("popover-close");
+
+        if (popoverCloseBtn) {
+          popoverCloseBtn.addEventListener("click", function () {
+            hideOverlay();
+          });
+        }
+
+        parseQueryParams();
+        initPage();
+      });
+
+      function showOverlay(message) {
+        if (!overlay || !overlayText) return;
+        if (message) overlayText.innerHTML = message;
+        overlay.classList.remove("hidden");
+      }
+
+      function hideOverlay() {
+        if (overlay) overlay.classList.add("hidden");
+        if (popover) popover.classList.add("hidden");
+      }
+
+      function showResultPopover(title, message) {
+        if (!popover || !overlay) return;
+        if (popoverTitle) popoverTitle.textContent = title;
+        if (popoverMessage) popoverMessage.textContent = message;
+        popover.classList.remove("hidden");
+        overlay.classList.remove("hidden"); // make sure overlay is visible
+      }
+
+      function parseQueryParams() {
+        const qs = new URLSearchParams(window.location.search);
+        QUERY = Object.fromEntries(qs.entries());
+        VID = QUERY.vid || QUERY.VID || "";
+        SCHOOL_VALUE = (QUERY.school || "").trim(); // same as ?school=Silverado
+        COACH_NAME = decodeURIComponent(QUERY.coachName || "");
+        COACH_EMAIL = decodeURIComponent(QUERY.coachEmail || "");
+      }
+
+      // ---- Roster helpers ----
+      function findSchoolByValue(schoolValue) {
+        return ROSTERS.find(
+          s => (s.school_name || "").trim() === (schoolValue || "").trim()
+        );
+      }
+
+      function getRosterForSchool(schoolValue) {
+        const school = findSchoolByValue(schoolValue);
+        if (!school) return [];
+
+        const list = Array.isArray(school.boys_roster)
+          ? school.boys_roster.slice()
+          : [];
+
+        list.sort((a, b) =>
+          (a?.name || "").localeCompare((b?.name || ""), "en", { sensitivity: "base" })
+        );
+
+        return list; // <-- return objects so we still have .number
+      }
+
+
+      // Utility: create <option> list for a player select
+      function buildPlayerOptions(selectEl, players, placeholder = "Select player…") {
+        selectEl.innerHTML = "";
+
+        const ph = document.createElement("option");
+        ph.value = "";
+        ph.textContent = placeholder;
+        ph.disabled = true;
+        ph.selected = true;
+        selectEl.appendChild(ph);
+
+        players.forEach(p => {
+          // Support both old string format and new object format
+          const name = (typeof p === "string") ? p : (p?.name || "");
+          const number = (typeof p === "object" && p !== null) ? p.number : null;
+
+          // Show 0 as a real number (don’t treat it as falsy)
+          const hasNumber =
+            number === 0 || number === "0" ||
+            (number !== null && number !== undefined && String(number).trim() !== "");
+
+          const label = hasNumber ? `[${number}] ${name}` : name;
+
+          const o = document.createElement("option");
+          o.value = name;       // IMPORTANT: keep value as the plain name for submission
+          o.textContent = label; // Display includes jersey number
+          selectEl.appendChild(o);
+        });
+      }
+
+      // ---- Init / data loading ----
+      function initPage() {
+        const status = document.getElementById("statusMessage");
+        status.textContent = "";
+        status.className = "note info";
+
+        // Local testing (no google.script.run)
+        if (typeof google === "undefined" || !google.script || !google.script.run) {
+          console.log("Local mode - using window.location.search for params:", { VID, SCHOOL_VALUE });
+
+          ROSTERS = [
+            {
+              school_name: "Silverado",
+              boys_roster: [{ name: "Test Pitcher A" }, { name: "Test Pitcher B" }]
+            }
+          ];
+          DISPUTE_CONTEXT = {
+            matchup: "Silverado vs Sample Opponent",
+            dateDisplay: "04/01/2025",
+            pitchers: [
+              {
+                id: "p1",
+                name: "Test Pitcher A",
+                teamDisplay: "Silverado",
+                schoolValue: "Silverado",
+                recordedPitchCount: 80
+              },
+              {
+                id: "p2",
+                name: "Opp Pitcher 1",
+                teamDisplay: "Sample Opponent",
+                schoolValue: "Sample_Opponent",
+                recordedPitchCount: 65
+              }
+            ]
+          };
+          applyDisputeContext(DISPUTE_CONTEXT);
+          return;
+        }
+
+        // -------- REAL Apps Script environment --------
+        google.script.url.getLocation(function (loc) {
+          // Show loading overlay immediately
+          showOverlay("Loading Pitcher Details<br>Please Wait...");
+
+          const p = (loc && loc.parameter) || {};
+          VID = p.vid || p.VID || "";
+          SCHOOL_VALUE = (p.school || "").trim();
+          COACH_NAME = decodeURIComponent(p.coachName || "");
+          COACH_EMAIL = decodeURIComponent(p.coachEmail || "");
+
+          if (!VID) {
+            hideOverlay();
+            document.getElementById("pitchersContainer").innerHTML =
+              '<p class="loading-text">Missing or invalid dispute link (no VID). Please contact the league director.</p>';
+            return;
+          }
+
+          // Step 1: Load rosters
+          google.script.run
+            .withSuccessHandler(function (rosters) {
+              ROSTERS = rosters || [];
+
+              // Step 2: Load the dispute context
+              google.script.run
+                .withSuccessHandler(function (ctx) {
+                  hideOverlay();   // done loading data!
+                  DISPUTE_CONTEXT = ctx || {};
+                  applyDisputeContext(DISPUTE_CONTEXT);
+                })
+                .withFailureHandler(function (err) {
+                  hideOverlay();
+                  console.error("getDisputeContext error:", err);
+                  document.getElementById("pitchersContainer").innerHTML =
+                    '<p class="loading-text">Unable to load game details. Please contact the league director.</p>';
+                })
+                .getDisputeContext(VID, SCHOOL_VALUE);
+            })
+            .withFailureHandler(function (err) {
+              hideOverlay();
+              console.error("getRosterDataFromDrive error:", err);
+              document.getElementById("pitchersContainer").innerHTML =
+                '<p class="loading-text">Unable to load roster data. Please contact the league director.</p>';
+            })
+            .getRosterDataFromDrive();
+        });
+      }
+
+      function applyDisputeContext(ctx) {
+        console.log("Dispute context from server:", ctx);
+        console.log("Pitchers array:", ctx ? ctx.pitchers : "no ctx");
+
+        const matchupEl = document.getElementById("gameMatchup");
+        const dateEl = document.getElementById("gameDate");
+        matchupEl.textContent =
+          ctx.matchup ||
+          (ctx.homeTeamDisplay && ctx.awayTeamDisplay
+            ? ctx.homeTeamDisplay + " vs " + ctx.awayTeamDisplay
+            : "Unknown matchup");
+        dateEl.textContent = ctx.dateDisplay || ctx.date || "Unknown date";
+
+        const pitchers = Array.isArray(ctx.pitchers) ? ctx.pitchers : [];
+
+        // capture the submitting team value (e.g. "Del_Sol")
+        if (pitchers.length > 0) {
+          SUBMITTING_SCHOOL_VALUE = (pitchers[0].schoolValue || "").trim();
+          console.log("Submitting team for dispute:", SUBMITTING_SCHOOL_VALUE);
+        }
+
+        renderPitchers(pitchers);
+        setupMissingPitchersSection();
+        setupSubmitHandler();
+      }
+
+      // ---- Render pitchers block ----
+      function renderPitchers(pitchers) {
+        const container = document.getElementById("pitchersContainer");
+        container.innerHTML = "";
+
+        if (!pitchers.length) {
+          container.innerHTML =
+            '<p class="loading-text">No pitchers were recorded for this game.</p>';
+          return;
+        }
+
+        pitchers.forEach(function (p, index) {
+          const row = document.createElement("div");
+          row.className = "pitcher-dispute-row";
+          row.dataset.pitcherId = p.id || "";
+          row.dataset.pitcherName = p.name || "";
+          row.dataset.pitchCount =
+            typeof p.recordedPitchCount === "number"
+              ? p.recordedPitchCount
+              : (typeof p.pitchCount === "number" ? p.pitchCount : "");
+          row.dataset.schoolValue = (p.schoolValue || "").trim(); // for roster lookup
+          row.dataset.teamDisplay = p.teamDisplay || p.team || "";
+
+          const teamLabel = row.dataset.teamDisplay || "";
+          const countValue = row.dataset.pitchCount;
+          const countLabel =
+            countValue !== "" ? countValue + " pitches" : "Pitch count not recorded";
+
+          row.innerHTML =
+            '<div class="pitcher-main">' +
+            '  <div class="pitcher-name">' +
+            (p.name || "Unknown pitcher") +
+            "</div>" +
+            '  <div class="pitcher-details">' +
+            (teamLabel ? teamLabel + " · " : "") +
+            countLabel +
+            "</div>" +
+            "</div>" +
+            '<div class="radio-line">' +
+            '  <label>' +
+            '    <input type="radio" name="dispute-' +
+            index +
+            '" value="none" checked>' +
+            "    No dispute" +
+            "  </label>" +
+            '  <label>' +
+            '    <input type="radio" name="dispute-' +
+            index +
+            '" value="count">' +
+            "    Dispute pitch count" +
+            "  </label>" +
+            '  <label>' +
+            '    <input type="radio" name="dispute-' +
+            index +
+            '" value="pitcher">' +
+            "    Dispute pitcher" +
+            "  </label>" +
+            '  <label>' +
+            '    <input type="radio" name="dispute-' +
+            index +
+            '" value="both">' +
+            "    Dispute both" +
+            "  </label>" +
+            "</div>" +
+            '<div class="dispute-extra hidden"></div>';
+
+          container.appendChild(row);
+        });
+
+        // Event delegation for radio changes
+        container.addEventListener("change", function (e) {
+          if (e.target.matches('input[type="radio"][name^="dispute-"]')) {
+            const radio = e.target;
+            const row = radio.closest(".pitcher-dispute-row");
+            const value = radio.value;
+            const extra = row.querySelector(".dispute-extra");
+            updateDisputeExtras(row, extra, value);
+          }
+        });
+      }
+
+      function updateDisputeExtras(row, extra, disputeType) {
+        extra.innerHTML = "";
+        extra.classList.add("hidden");
+
+        const schoolValue = row.dataset.schoolValue || "";
+        const rosterNames = getRosterForSchool(schoolValue);
+
+        function createPitcherSelect() {
+          const sel = document.createElement("select");
+          sel.className = "player-select dispute-pitcher-select";
+          buildPlayerOptions(sel, rosterNames, "Select correct pitcher…");
+          return sel;
+        }
+
+        function createCountInput() {
+          const inp = document.createElement("input");
+          inp.type = "number";
+          inp.min = "0";
+          inp.max = "200";
+          inp.step = "1";
+          inp.placeholder = "Correct pitch count";
+          inp.className = "number-input dispute-count-input";
+          return inp;
+        }
+
+        if (disputeType === "none") {
+          return;
+        }
+
+        let hasContent = false;
+
+        if (disputeType === "pitcher" || disputeType === "both") {
+          const wrap = document.createElement("div");
+          wrap.className = "pitcher-row";
+          const label = document.createElement("label");
+          label.className = "select-label";
+          label.textContent = "Select the correct pitcher";
+          const select = createPitcherSelect();
+          label.appendChild(select);
+          wrap.appendChild(label);
+          extra.appendChild(wrap);
+          hasContent = true;
+        }
+
+        if (disputeType === "count" || disputeType === "both") {
+          const wrap2 = document.createElement("div");
+          wrap2.className = "pitcher-row";
+          const label2 = document.createElement("label");
+          label2.className = "select-label";
+          label2.textContent = "Enter the correct pitch count";
+          const inp = createCountInput();
+          label2.appendChild(inp);
+          wrap2.appendChild(label2);
+          extra.appendChild(wrap2);
+          hasContent = true;
+        }
+
+        // ✅ NEW: note text area for this pitcher dispute
+        const noteWrap = document.createElement("div");
+        const noteLabel = document.createElement("label");
+        noteLabel.className = "select-label";
+        noteLabel.textContent = "Additional Notes:";
+        const noteArea = document.createElement("textarea");
+        noteArea.className = "text-input dispute-note-input";
+        noteArea.rows = 2;
+        noteArea.placeholder = "(Optional)";
+        noteLabel.appendChild(noteArea);
+        noteWrap.appendChild(noteLabel);
+        extra.appendChild(noteWrap);
+        hasContent = true;
+
+        if (hasContent) {
+          extra.classList.remove("hidden");
+        }
+      }
+
+
+      // ---- Missing pitchers section ----
+      function setupMissingPitchersSection() {
+        const cb = document.getElementById("missingPitchers");
+        const details = document.getElementById("missingPitchersDetails");
+        const entriesContainer = document.getElementById("missingEntries");
+        const addBtn = document.getElementById("addMissingBtn");
+
+        cb.addEventListener("change", function () {
+          if (cb.checked) {
+            details.classList.remove("hidden");
+            if (!entriesContainer.children.length) {
+              addMissingEntryRow(entriesContainer);
+            }
+          } else {
+            details.classList.add("hidden");
+          }
+        });
+
+        addBtn.addEventListener("click", function () {
+          addMissingEntryRow(entriesContainer);
+        });
+      }
+
+      function addMissingEntryRow(container) {
+        const rosterNames = getRosterForSchool(
+          SUBMITTING_SCHOOL_VALUE || SCHOOL_VALUE
+        ); // use submitting team's roster
+        const row = document.createElement("div");
+        row.className = "missing-entry";
+
+        const select = document.createElement("select");
+        select.className = "player-select missing-player-select";
+        buildPlayerOptions(select, rosterNames, "Select missing pitcher…");
+
+        const input = document.createElement("input");
+        input.type = "number";
+        input.min = "0";
+        input.max = "200";
+        input.step = "1";
+        input.placeholder = "Pitch count";
+        input.className = "number-input missing-count-input";
+
+        // ✅ NEW: note for missing pitcher
+        const note = document.createElement("textarea");
+        note.className = "text-input missing-note-input";
+        note.rows = 2;
+        note.placeholder = "Note about this missing pitcher (optional)";
+
+        row.appendChild(select);
+        row.appendChild(input);
+        row.appendChild(note);
+        container.appendChild(row);
+      }
+
+
+      // ---- Submit handler ----
+      function setupSubmitHandler() {
+        const btn = document.getElementById("submitBtn");
+        const status = document.getElementById("statusMessage");
+
+        btn.addEventListener("click", function () {
+          const container = document.getElementById("pitchersContainer");
+          const rows = Array.prototype.slice.call(
+            container.querySelectorAll(".pitcher-dispute-row")
+          );
+
+          const disputes = rows.map(function (row, index) {
+            let disputeType = "none";
+            const radios = container.querySelectorAll(
+              'input[name="dispute-' + index + '"]'
+            );
+            Array.prototype.forEach.call(radios, function (r) {
+              if (r.checked) disputeType = r.value;
+            });
+
+            const extra = row.querySelector(".dispute-extra");
+            const pitcherSelect = extra
+              ? extra.querySelector(".dispute-pitcher-select")
+              : null;
+            const countInput = extra
+              ? extra.querySelector(".dispute-count-input")
+              : null;
+            const noteInput = extra
+              ? extra.querySelector(".dispute-note-input")
+              : null;
+
+            const proposedPitcher =
+              pitcherSelect && pitcherSelect.value ? pitcherSelect.value : null;
+            const proposedPitchCount =
+              countInput && countInput.value !== ""
+                ? Number(countInput.value)
+                : null;
+            const note =
+              noteInput && noteInput.value.trim() !== ""
+                ? noteInput.value.trim()
+                : "";
+
+            return {
+              pitcherId: row.dataset.pitcherId || null,
+              name: row.dataset.pitcherName || null,
+              teamSchoolValue: row.dataset.schoolValue || null,
+              teamDisplay: row.dataset.teamDisplay || null,
+              recordedPitchCount:
+                row.dataset.pitchCount !== ""
+                  ? Number(row.dataset.pitchCount)
+                  : null,
+              disputeType: disputeType,           // 'none', 'count', 'pitcher', 'both'
+              proposedPitcher: proposedPitcher,   // if applicable
+              proposedPitchCount: proposedPitchCount, // if applicable
+              note: note                          // ✅ NEW
+            };
+          });
+
+          const missingChecked = document.getElementById("missingPitchers").checked;
+          const missingEntries = [];
+          if (missingChecked) {
+            const rows = document.querySelectorAll(".missing-entry");
+            rows.forEach(function (row) {
+              const sel = row.querySelector(".missing-player-select");
+              const inp = row.querySelector(".missing-count-input");
+              const noteInput = row.querySelector(".missing-note-input");
+
+              const name = sel && sel.value ? sel.value : null;
+              const count =
+                inp && inp.value !== "" ? Number(inp.value) : null;
+              const note =
+                noteInput && noteInput.value.trim() !== ""
+                  ? noteInput.value.trim()
+                  : "";
+
+              if (name && count !== null) {
+                missingEntries.push({
+                  name,
+                  pitchCount: count,
+                  teamSchoolValue: SUBMITTING_SCHOOL_VALUE || SCHOOL_VALUE,
+                  note: note                 // ✅ NEW
+                });
+              }
+            });
+          }
+
+
+          const payload = {
+            vid: VID,
+            school: SCHOOL_VALUE,
+            coachName: COACH_NAME,
+            coachEmail: COACH_EMAIL,
+            missingPitchersChecked: missingChecked,
+            missingPitchers: missingEntries,
+            disputes: disputes
+          };
+
+          // Local testing
+          if (typeof google === "undefined" || !google.script || !google.script.run) {
+            console.log("Dispute payload:", payload);
+            status.textContent =
+              "Form would be submitted to Apps Script. (Check console for payload.)";
+            status.className = "note ok";
+            return;
+          }
+
+          btn.disabled = true;
+          status.textContent = "Submitting dispute...";
+          status.className = "note info";
+
+          showOverlay("Submitting<br>Please Wait...");
+
+          google.script.run
+            .withSuccessHandler(function (message) {
+              btn.disabled = false;
+
+              showResultPopover(
+                "Dispute Submitted",
+                message || "Dispute submitted successfully. Thank you."
+              );
+
+              status.textContent =
+                message || "Dispute submitted successfully. Thank you.";
+              status.className = "note ok";
+            })
+            .withFailureHandler(function (err) {
+              console.error(err);
+              btn.disabled = false;
+
+              showResultPopover(
+                "Submission Error",
+                "There was a problem submitting your dispute. Please try again or contact the league director."
+              );
+
+              status.textContent =
+                "There was a problem submitting your dispute. Please try again or contact the league director.";
+              status.className = "note err";
+            })
+            .submitPitchDispute(payload);
+        });
+      }
+    </script>
+
+  </body>
+</html>

@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>NIAA Baseball Pitch Count Submission</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  :root {
+    --lighter-grey: #e5e7eb;
+    --darker-grey: #d0d4d9;
+    --bg: #f7f7fb;
+    --card: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --accent: #0f766e;
+    --accent-2: #2563eb;
+    --ring: rgba(37, 99, 235, 0.25);
+    --radius: 16px;
+    --font-ui: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+  margin: 0;
+    font-family: var(--font-ui);
+    font-size: 16px;
+    line-height: 1.55;
+    color: var(--text);
+    background: url(https://d2o2figo6ddd0g.cloudfront.net/n/s/bp91ord6e5kl8/page_bg.jpg)
+                repeat-x left top #000001;
+  }
+
+  .container {
+    max-width: 1200px; /* was 1100px */
+    margin: 28px auto;
+    padding: 0 10px;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0px;
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 16px rgba(0,0,0,0.05);
+  }
+
+  .header img {
+    margin-right: 20px;
+    height: 150px;
+    width: auto;
+    border-radius: var(--radius);
+  }
+
+  .header h1 {
+    font-family: var(--font-ui);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0;
+    font-size: clamp(1.4rem, 2.2vw + 0.5rem, 2rem);
+    line-height: 1.25;
+  }
+
+
+  /* Controls row (radio groups) */
+  #controls-row-container{
+    padding: 0px 10px 10px 10px;
+    border-radius: 12px;
+    width: fit-content;
+    background-color: var(--lighter-grey);
+    display: flex;
+    justify-content: center;
+  }
+  .flex-outer-container {
+    display: flex;
+    justify-content: center;
+  }
+
+  .inner-grey-container {
+    background-color: var(--darker-grey);
+    padding: 0px;
+    border-radius: var(--radius);
+    box-shadow: 0 2px 16px rgba(0,0,0,0.05);
+  }
+  .controls-row {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+  }
+
+  .game-block {
+    background-color: var(--lighter-grey);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-top: 10px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.05);
+  }
+
+  .text-input, .number-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: var(--radius);
+    font-size: .95rem;
+    outline: none;
+    background: #fff;
+  }
+  .text-input:focus, .number-input:focus {
+    border-color: var(--accent-2);
+    box-shadow: 0 0 0 4px var(--ring);
+  }
+
+  fieldset {
+    position: relative;
+    padding: 20px 14px 12px 14px;
+    margin: 0;
+    border: 1px solid var(--lighter-grey);
+    background: var(--darker-grey);
+    background: #ffffff;
+    border-radius: var(--radius);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  }
+  legend {
+    position: absolute;
+    top: 3%;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+
+  .radio-line {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .radio-line label {
+    display: inline-flex;
+    align-items: center;
+    height: 40px;
+    gap: 8px;
+    padding: 6px 10px;
+    background: white;
+    border: 1px solid var(--darker-grey);
+    border-radius: var(--radius);
+    cursor: pointer;
+    user-select: none;
+  }
+  .radio-line input[type="radio"] { accent-color: var(--accent-2); }
+
+  /* Team / panel layout */
+  .panels {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 960px) { .panels { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--lighter-grey);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  }
+  .panel h2 {
+    position: relative;
+    /* margin: 0 0 10px 0; */
+    font-size: 1.1rem;
+    color: var(--accent);
+  }
+  .panel h3 {
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin: 0 0 12px 0;
+    color: var(--muted);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+
+  label.select-label {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+
+  select {
+    width: 100%;
+    padding: 10px 12px;
+    /* border: 1px solid #d1d5db; */
+    border: 1px solid rgb(133, 133, 133);
+    border-radius: var(--radius);
+    background: #fff;
+    font-size: 0.95rem;
+    outline: none;
+  }
+  select:focus {
+    border-color: var(--accent-2);
+    box-shadow: 0 0 0 4px var(--ring);
+  }
+
+  .game-heading {
+    font-weight: 800;
+    font-size: 1.3rem;
+    margin: -7px 0px -10px 3px;
+  }
+
+
+  .note {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .inner-container, #inner-container-header {
+    margin-bottom: 15px;
+    padding: 10px 10px 10px 10px;
+    border-radius: var(--radius);
+    background: var(--darker-grey);
+  }
+
+  #inner-container-header {
+    background: var(--darker-grey);
+  }
+
+  .pitcher-row {
+    display: grid;
+    grid-template-columns: 255px 128px 75px;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  @media (max-width: 640px) {
+    .pitcher-row { grid-template-columns: 1fr; }
+  }
+
+  .number-input, .player-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: var(--radius);
+    font-size: .95rem;
+    outline: none;
+    background: #fff;
+  }
+  .number-input {
+    width: 128px;
+  }
+  .player-select {
+    width: 255px;
+  }
+  .number-input:focus, .player-select:focus {
+    border-color: var(--accent-2);
+    box-shadow: 0 0 0 4px var(--ring);
+  }
+
+  /* Submission-page specific: remove button on pitcher rows */
+  .remove-button-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  .remove-row-btn {
+    height: 40px;
+    border: 1px solid var(--lighter-grey);
+    background: #f9fafb;
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    cursor: pointer;
+  }
+
+  .submit-btn {
+    background-color: white;
+    color: black;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 12px 24px;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+  .submit-btn:hover {
+    background-color: var(--accent);
+    color: white;
+  }
+  .submit-btn:active {
+    transform: translateY(1px);
+  }
+
+  .hidden { display: none !important; }
+
+  /* Overlay + popover (shared with dispute page) */
+  #overlay {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.55);
+    z-index: 9999;
+    --ball-size: 18vh;
+    --overlay-font-size: 3vh;
+  }
+
+  #ball-and-text-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0px;
+    text-align: center;
+  }
+
+  #overlay .baseball {
+    --ball-size: 18vh;
+  }
+
+  #overlay .overlay-text {
+    color: white;
+    text-align: center;
+    text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.8);
+    font-size: 4vh;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+
+  /* Popover styling */
+  #overlay .popover {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 260px;
+    max-width: 90vw;
+    background: #ffffff;
+    border-radius: var(--radius);
+    padding: 16px 20px 18px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+  }
+
+  #overlay .popover h2 {
+    margin: 0 0 8px;
+    font-size: 1.1rem;
+  }
+
+  #overlay .popover p {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+
+  #overlay .popover-close {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    border: none;
+    background: transparent;
+    font-size: 1.3rem;
+    font-weight: bold;
+    line-height: 1;
+    color: #e11d48;
+    cursor: pointer;
+  }
+
+  /* Baseball spinner */
+  .baseball {
+    --ball-size: 200px;
+    position: relative;
+    overflow: hidden;
+    width: var(--ball-size);
+    height: var(--ball-size);
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #ffffff, #dddddd);
+    box-shadow:
+      0 calc(var(--ball-size) * 0.05) calc(var(--ball-size) * 0.125) rgba(0, 0, 0, 0.4),
+      inset 0 0 calc(var(--ball-size) * 0.04) rgba(0, 0, 0, 0.15);
+    animation: ball-spin 3s linear infinite;
+  }
+
+  @keyframes ball-spin {
+    0%   { transform: rotate(0deg); }
+    50%  { transform: rotate(180deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .baseball::before,
+  .baseball::after {
+    content: "";
+    position: absolute;
+    width:  calc(var(--ball-size) * 1.3);
+    height: calc(var(--ball-size) * 1.3);
+    border-radius: 50%;
+    border: calc(var(--ball-size) * 0.015) solid #d11313;
+  }
+
+  .baseball::before {
+    left: calc(var(--ball-size) * 0.7);
+    top:  calc(var(--ball-size) * -0.15);
+    transform: rotate(-25deg);
+  }
+
+  .baseball::after {
+    right: calc(var(--ball-size) * 0.7);
+    top:   calc(var(--ball-size) * -0.15);
+    transform: rotate(25deg);
+  }
+
+  .stitch {
+    position: absolute;
+    width:  calc(var(--ball-size) * 0.11);
+    height: calc(var(--ball-size) * 0.015);
+    background: #d11313;
+    border-radius: 999px;
+  }
+
+  .stitch.left.s1  { top: 16%;  left: 14%; transform: rotate(-37deg); }
+  .stitch.left.s2  { top: 22%;  left: 17%; transform: rotate(-32deg); }
+  .stitch.left.s3  { top: 28%;  left: 20%; transform: rotate(-27deg); }
+  .stitch.left.s4  { top: 34%;  left: 22%; transform: rotate(-22deg); }
+  .stitch.left.s5  { top: 40.5%; left: 23%; transform: rotate(-16deg); }
+  .stitch.left.s6  { top: 47%;  left: 23.75%; transform: rotate(-10deg); }
+  .stitch.left.s7  { top: 53.5%; left: 24%; transform: rotate(-5deg); }
+  .stitch.left.s8  { top: 60%;  left: 23.5%; transform: rotate(0deg); }
+  .stitch.left.s9  { top: 66.5%; left: 22.25%;transform: rotate(6deg); }
+  .stitch.left.s10 { top: 73%;  left: 20%; transform: rotate(12deg); }
+  .stitch.left.s11 { top: 79.5%;left: 17%; transform: rotate(19deg); }
+  .stitch.left.s12 { top: 85.5%;left: 14%; transform: rotate(27deg); }
+
+  .stitch.right.s1  { top: 16%;  right: 14%; transform: rotate(37deg); }
+  .stitch.right.s2  { top: 22%;  right: 17%; transform: rotate(32deg); }
+  .stitch.right.s3  { top: 28%;  right: 20%; transform: rotate(27deg); }
+  .stitch.right.s4  { top: 34%;  right: 22%; transform: rotate(22deg); }
+  .stitch.right.s5  { top: 40.5%; right: 23%; transform: rotate(16deg); }
+  .stitch.right.s6  { top: 47%;  right: 23.75%;transform: rotate(10deg); }
+  .stitch.right.s7  { top: 53.5%; right: 24%; transform: rotate(5deg); }
+  .stitch.right.s8  { top: 60%;  right: 23.5%; transform: rotate(0deg); }
+  .stitch.right.s9  { top: 66.5%; right: 22.25%;transform: rotate(-6deg); }
+  .stitch.right.s10 { top: 73%;  right: 20%; transform: rotate(-12deg); }
+  .stitch.right.s11 { top: 79.5%; right: 17%; transform: rotate(-19deg); }
+  .stitch.right.s12 { top: 85.5%; right: 14%; transform: rotate(-27deg); }
+
+  /* Dispute-page specific stuff (harmless on submission page, but kept for parity) */
+  .single-panel-wrapper { margin-top: 18px; }
+
+  .dispute-header-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .dispute-game-meta {
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  .pitcher-dispute-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    padding: 8px 10px;
+    border-radius: var(--radius);
+    background: var(--lighter-grey);
+    margin-bottom: 8px;
+  }
+
+  .pitcher-main { min-width: 200px; }
+  .pitcher-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .pitcher-details {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .dispute-extra {
+    width: 100%;
+    margin-top: 6px;
+  }
+
+  .missing-row {
+    margin-top: 10px;
+    font-size: 0.9rem;
+  }
+  .missing-row label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+
+  .missing-details {
+    margin-top: 8px;
+    padding: 8px;
+    border-radius: var(--radius);
+    background: var(--lighter-grey);
+  }
+
+  .missing-entry {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .add-missing-btn {
+    border: 1px solid #d1d5db;
+    background: #f9fafb;
+    border-radius: var(--radius);
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+
+  .submit-row {
+    margin-top: 16px;
+    text-align: center;
+  }
+
+  #submission-statement-div {
+    padding: 8px 10px;
+    text-align: center; 
+    max-width: 360px;
+    /* border: 1px solid black; */
+    background-color: var(--lighter-grey);
+    border-radius: var(--radius);
+    border: 2px dashed red;
+  }
+
+  #statusMessage {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    text-align: center;
+  }
+  #statusMessage.ok { color: #15803d; }
+  #statusMessage.err { color: #b91c1c; }
+  #statusMessage.info { color: var(--muted); }
+
+  .loading-text {
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+
+  /* Inner gray “layer” inside panels (mirrors dispute page inner-container) */
+  .panel-inner {
+    padding: 10px 10px 12px;
+    border-radius: var(--radius);
+    background: var(--lighter-grey);
+  }
+
+  .panel.opponent-panel {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .submitting-panel-inner {
+    padding: 10px 10px 12px;
+    border-radius: var(--radius);
+    background: var(--lighter-grey);
+    flex-grow: 1;
+  }
+  .opponent-panel-inner {
+    flex-grow: 1;
+  }
+
+    /* Make individual pitcher rows feel like dispute-page chips */
+  .pitcher-row {
+    display: grid;
+    grid-template-columns: 255px 128px 75px;
+    gap: 12px;
+    margin-bottom: 8px;
+
+    /* NEW: chip-like background and padding */
+    padding: 8px 10px;
+    border-radius: var(--radius);
+    background: var(--lighter-grey); /* same as .pitcher-dispute-row */
+  }
+
+  /* On narrow screens, keep the stack but preserve the chip look */
+  @media (max-width: 640px) {
+    .pitcher-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Inside pitcher rows, labels should look like pitcher-name, not muted notes */
+  .pitcher-row .select-label {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text);
+  }
+
+  .coach-role-option {
+    width: 120px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+
+  .coach-role-option:hover{
+    background: rgba(0,0,0,0.04);
+  }
+
+  .req{ color: #b00020; font-weight: 700; }
+  .coach-role-hint{ margin: 8px 0 0; font-size: 0.9em; opacity: 0.8; }
+
+   /* Red highlight when coach role is missing */
+  .coach-role-error .radio-line{
+    outline: 3px solid red;
+    border-radius: 12px;
+    padding: 8px 10px;
+  }
+
+  .coach-role-error legend{
+    color: #b00020;
+  } 
+
+</style>
+
+
+
+</head>
+<body>
+
+  <div id="overlay" class="hidden">
+    <div id="ball-and-text-container">
+      <div class="baseball">
+        <!-- Left stitches -->
+        <span class="stitch left s1"></span>
+        <span class="stitch left s2"></span>
+        <span class="stitch left s3"></span>
+        <span class="stitch left s4"></span>
+        <span class="stitch left s5"></span>
+        <span class="stitch left s6"></span>
+        <span class="stitch left s7"></span>
+        <span class="stitch left s8"></span>
+        <span class="stitch left s9"></span>
+        <span class="stitch left s10"></span>
+        <span class="stitch left s11"></span>
+        <span class="stitch left s12"></span>
+
+        <!-- Right stitches -->
+        <span class="stitch right s1"></span>
+        <span class="stitch right s2"></span>
+        <span class="stitch right s3"></span>
+        <span class="stitch right s4"></span>
+        <span class="stitch right s5"></span>
+        <span class="stitch right s6"></span>
+        <span class="stitch right s7"></span>
+        <span class="stitch right s8"></span>
+        <span class="stitch right s9"></span>
+        <span class="stitch right s10"></span>
+        <span class="stitch right s11"></span>
+        <span class="stitch right s12"></span>
+      </div>
+      <div class="overlay-text">
+        Submitting<br>Please Wait...<br>
+      </div>
+    </div>
+
+    <!-- Result popover -->
+    <div id="submission-popover" class="popover hidden">
+      <button id="popover-close" class="popover-close" type="button">&times;</button>
+      <h2 id="popover-title"></h2>
+      <p id="popover-message"></p>
+    </div>
+  </div>
+
+  
+  <div class="container">
+    <div id="inner-container-header">
+      <!-- Header with logo + title centered together -->
+      <header class="header" aria-label="App Header" style="padding: 10px 0px 10px 0px;">
+        <img id="niaa-logo" alt="NIAA logo"
+            src="https://www.niaa.com/design/logos/NIAA_Logo.jpg?max_width=250" />
+        <h1>Baseball Pitch Count Submission</h1>
+      </header>
+    </div>
+    
+    <div class="inner-grey-container">
+      <div class="inner-container">
+        <!-- Radio groups row -->
+         <div class="flex-outer-container">
+          <div id="controls-row-container">
+            <section class="controls-row" aria-label="Game context">
+              
+              <!-- New: Game Date -->
+              <fieldset>
+                <legend>Game Date</legend>
+                <input id="gameDate" type="date" style="margin-top: 5px; width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:12px;font-size:.95rem;" required />
+              </fieldset>
+                    
+              <fieldset>
+                <legend>Submission Type</legend>
+                <div class="radio-line" role="radiogroup" aria-label="Game Type">
+                  <label>
+                    <input type="radio" name="gameType" value="single_game" checked />
+                    Single game
+                  </label>
+
+                  <label class="multi-game-label" style="display:flex; align-items:center;gap:6px;">
+                    <input type="radio" name="gameType" value="multi_game" />
+                    Multi-game
+
+                    <!-- New: how many games -->
+                    <select id="multiGameCount" class="hidden"
+                            style="margin-left:4px;padding:4px 6px;border-radius:8px;border:1px solid #d1d5db;font-size:.85rem;width: 100px;">
+                      <option value="2">2 games</option>
+                      <option value="3">3 games</option>
+                    </select>
+                  </label>
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend>Submitting Head Coach<span class="req">*</span></legend>
+                <section class="radio-line">
+                  <label class="coach-role-option">
+                    <input type="radio" name="coachRole" value="VARSITY">
+                    Varsity
+                  </label>
+                  <label class="coach-role-option">
+                    <input type="radio" name="coachRole" value="JV">
+                    JV
+                  </label>
+                </section>
+              </fieldset>
+
+            </section>
+          </div>
+        </div>
+
+        <!-- All games live here -->
+        <section id="gamesContainer">
+          <!-- GAME 1 (base instance) -->
+          <div class="game-block" data-game-index="1">
+            <h2 class="game-heading">Game 1</h2>
+
+            <section class="panels">
+              <!-- Submitting Team Panel -->
+              <div class="panel submitting-panel">
+                  <h3>Submitting Team</h3>
+                  <div class="submitting-panel-inner">
+                    
+                    <div class="grid">
+                        <!-- division / region / team selects -->
+                        <div>
+                          <label class="select-label" for="submittingDivision-1">Division</label>
+                          <select id="submittingDivision-1" class="submittingDivision">
+                              <option value="" disabled selected>Select division…</option>
+                              <option>5A</option>
+                              <option>4A</option>
+                              <option>3A</option>
+                              <option>2A</option>
+                              <option>1A</option>
+                              <option>Independent</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="select-label" for="submittingRegion-1">Region</label>
+                          <select id="submittingRegion-1" class="submittingRegion" disabled>
+                              <option value="" disabled selected>Select region…</option>
+                              <option>Northern</option>
+                              <option>Southern</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="select-label" for="submittingTeam-1">Team</label>
+                          <select id="submittingTeam-1" class="submittingTeam" disabled>
+                              <option value="" disabled selected>Select team…</option>
+                          </select>
+                        </div>
+                    </div>
+                    <p class="note">Pick a Division, then a Region to see available teams.</p>
+
+                    <!-- NEW: inner gray box like dispute page -->
+                    <div class="panel-inner">
+                        <div id="pitchersContainer-1" class="pitchersContainer"></div>
+                        <p class="note submittingPlayerNote">
+                        Pick a team to load its roster. A new row will appear each time you choose a player.
+                        </p>
+                    </div>
+                  </div>
+                </div>
+
+
+              <!-- Opponent Panel -->
+              <div class="panel opponent-panel">
+                <h3>Opponent</h3>
+              
+                <div class="panel-inner opponent-panel-inner">
+                  <div class="radio-line" aria-label="Opponent Location">
+                      <!-- Notice name has -1 so radios are per-game -->
+                      <label>
+                      <input type="radio" name="opponentLocation-1" value="in-state" checked />
+                      In-state opponent
+                      </label>
+                      <label>
+                      <input type="radio" name="opponentLocation-1" value="out-of-state" />
+                      Out-of-state opponent
+                      </label>
+                  </div>
+
+                  <!-- In-state dropdowns -->
+                  <div class="grid opponentSelectors">
+                      <div>
+                      <label class="select-label" for="opponentDivision-1">Division</label>
+                      <select id="opponentDivision-1" class="opponentDivision">
+                          <option value="" disabled selected>Select division…</option>
+                          <option>5A</option>
+                          <option>4A</option>
+                          <option>3A</option>
+                          <option>2A</option>
+                          <option>1A</option>
+                          <option>Independent</option>
+                      </select>
+                      </div>
+                      <div>
+                      <label class="select-label" for="opponentRegion-1">Region</label>
+                      <select id="opponentRegion-1" class="opponentRegion" disabled>
+                          <option value="" disabled selected>Select region…</option>
+                          <option>Northern</option>
+                          <option>Southern</option>
+                      </select>
+                      </div>
+                      <div>
+                      <label class="select-label" for="opponentTeam-1">Team</label>
+                      <select id="opponentTeam-1" class="opponentTeam" disabled>
+                          <option value="" disabled selected>Select team…</option>
+                      </select>
+                      </div>
+                  </div>
+
+                  <!-- Out-of-state manual input -->
+                  <div class="opponentManual hidden" style="margin-top:12px;">
+                      <label class="select-label" for="opponentSchoolManual-1">Opponent School (out-of-state)</label>
+                      <input id="opponentSchoolManual-1" class="opponentSchoolManual" type="text"
+                          placeholder="Enter opponent school name"
+                          style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border: radius 16px;font-size:.95rem;">
+                      <p class="note">Required when “Out-of-state opponent” is selected.</p>
+                  </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <template id="gameTemplate">
+          <div class="game-block" data-game-index="__INDEX__">
+            <h2 class="game-heading">Game __INDEX__</h2>
+
+            <section class="panels">
+              <!-- Submitting Team Panel (simplified) -->
+              <div class="panel submitting-panel">
+                <h3>Submitting Team</h3>
+                <div class="panel-inner opponent-panel-inner">
+                  <p class="note">
+                    Submitting team: 
+                    <span class="submittingTeamDisplay">
+                      Select your team in Game 1 first
+                    </span>
+                  </p>
+
+                  <!-- Pitchers only, using same roster as Game 1 -->
+                  <div id="pitchersContainer-__INDEX__"
+                      class="pitchersContainer"
+                      style="margin-top:12px;"></div>
+
+                  <p class="note">
+                    Add pitchers for this game from your roster.
+                  </p>
+                  </div>
+              </div>
+
+              <!-- Opponent Panel (unchanged from your previous template) -->
+              <div class="panel opponent-panel">
+                <h3>Opponent</h3>
+                <div class="panel-inner opponent-panel-inner">
+                  <div class="radio-line" aria-label="Opponent Location">
+                    <label>
+                      <input type="radio" name="opponentLocation-__INDEX__" value="in-state" checked />
+                      In-state opponent
+                    </label>
+                    <label>
+                      <input type="radio" name="opponentLocation-__INDEX__" value="out-of-state" />
+                      Out-of-state opponent
+                    </label>
+                  </div>
+                
+
+                  <div class="grid opponentSelectors">
+                    <div>
+                      <label class="select-label" for="opponentDivision-__INDEX__">Division</label>
+                      <select id="opponentDivision-__INDEX__" class="opponentDivision">
+                        <option value="" disabled selected>Select division…</option>
+                        <option>5A</option>
+                        <option>4A</option>
+                        <option>3A</option>
+                        <option>2A</option>
+                        <option>1A</option>
+                        <option>Independent</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="select-label" for="opponentRegion-__INDEX__">Region</label>
+                      <select id="opponentRegion-__INDEX__" class="opponentRegion" disabled>
+                        <option value="" disabled selected>Select region…</option>
+                        <option>Northern</option>
+                        <option>Southern</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="select-label" for="opponentTeam-__INDEX__">Team</label>
+                      <select id="opponentTeam-__INDEX__" class="opponentTeam" disabled>
+                        <option value="" disabled selected>Select team…</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="opponentManual hidden" style="margin-top:12px;">
+                    <label class="select-label" for="opponentSchoolManual-__INDEX__">
+                      Opponent School (out-of-state)
+                    </label>
+                    <input id="opponentSchoolManual-__INDEX__"
+                          class="opponentSchoolManual"
+                          type="text"
+                          placeholder="Enter opponent school name"
+                          style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:16px;font-size:.95rem;">
+                    <p class="note">Required when “Out-of-state opponent” is selected.</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </template>
+
+
+        <div style="display: flex; justify-content: center; margin-top: 20px;">
+          <!-- Verification statement Button -->
+          <div id="submission-statement-div">*By submitting this document you are verifying that all information provided above is accurate.</div>
+        </div>
+        <!-- Submit Button -->
+        <div style="text-align:center; margin-top:15px;">
+          <button id="submitButton" class="submit-btn" type="button">Submit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+
+  <script>
+
+    let submittingTeamMeta = null;    // { division, region, team }
+    let submittingTeamRoster = [];    // array of players for that team
+    let CURRENT_PLAYERS      = [];    // [{ name, number }] for dropdowns
+
+    const gamesContainer = document.getElementById('gamesContainer');
+    const gameTemplate = document.getElementById('gameTemplate');
+
+    const overlay          = document.getElementById('overlay');
+    const baseball         = overlay.querySelector('.baseball');
+    const overlayText      = overlay.querySelector('.overlay-text');
+    const popover          = document.getElementById('submission-popover');
+    const popoverTitleEl   = document.getElementById('popover-title');
+    const popoverMessageEl = document.getElementById('popover-message');
+    const popoverCloseBtn  = document.getElementById('popover-close');
+
+    const DIVISIONS_ORDER = ["5A", "4A", "3A", "2A", "1A", "Independent"];
+
+    const TEAMS = {
+      "5A": {
+        Northern: [
+          { name: "Bishop Manogue", value: "Bishop_Manogue" },
+          { name: "Carson", value: "Carson" },
+          { name: "Damonte Ranch", value: "Damonte_Ranch" },
+          { name: "Douglas", value: "Douglas" },
+          { name: "Galena", value: "Galena" },
+          { name: "McQueen", value: "McQueen" },
+          { name: "North Valleys", value: "North_Valleys" },
+          { name: "Reed", value: "Reed" },
+          { name: "Reno", value: "Reno" },
+          { name: "Spanish Springs", value: "Spanish_Springs" }
+        ],
+        Southern: [
+          { name: "Arbor View", value: "Arbor_View" },
+          { name: "Basic", value: "Basic" },
+          { name: "Bishop Gorman", value: "Bishop_Gorman" },
+          { name: "Bonanza", value: "Bonanza" },
+          { name: "Centennial", value: "Centennial" },
+          { name: "Coronado", value: "Coronado" },
+          { name: "Desert Oasis", value: "Desert_Oasis" },
+          { name: "Durango", value: "Durango" },
+          { name: "Faith Lutheran", value: "Faith_Lutheran" },
+          { name: "Foothill", value: "Foothill" },
+          { name: "Green Valley", value: "Green_Valley" },
+          { name: "Las Vegas", value: "Las_Vegas" },
+          { name: "Legacy", value: "Legacy" },
+          { name: "Liberty", value: "Liberty" },
+          { name: "Palo Verde", value: "Palo_Verde" },
+          { name: "Shadow Ridge", value: "Shadow_Ridge" },
+          { name: "Sierra Vista", value: "Sierra_Vista" }
+        ]
+      },
+      "4A": {
+        Northern: [],
+        Southern: [
+          { name: "Cadence", value: "Cadence" },
+          { name: "Canyon Springs", value: "Canyon_Springs" },
+          { name: "Chaparral", value: "Chaparral" },
+          { name: "Cheyenne", value: "Cheyenne" },
+          { name: "Cimarron-Memorial", value: "Cimarron_Memorial" },
+          { name: "Clark", value: "Clark" },
+          { name: "Del Sol", value: "Del_Sol" },
+          { name: "Desert Pines", value: "Desert_Pines" },
+          { name: "Doral Red Rock", value: "Doral_Red_Rock" },
+          { name: "Eldorado", value: "Eldorado" },
+          { name: "Mater East", value: "Mater_East" },
+          { name: "Mojave", value: "Mojave" },
+          { name: "Rancho", value: "Rancho" },
+          { name: "SECTA", value: "SECTA" },
+          { name: "Silverado", value: "Silverado" },
+          { name: "SLAM Nevada", value: "SLAM_Nevada" },
+          { name: "Spring Valley", value: "Spring_Valley" },
+          { name: "Sunrise Mountain", value: "Sunrise_Mountain" },
+          { name: "Valley", value: "Valley" },
+          { name: "Western", value: "Western" }
+        ]
+      },
+      "3A": {
+        Northern: [
+          { name: "Churchill County", value: "Churchill_County" },
+          { name: "Dayton", value: "Dayton" },
+          { name: "Elko", value: "Elko" },
+          { name: "Fernley", value: "Fernley" },
+          { name: "Lowry", value: "Lowry" },
+          { name: "South Tahoe", value: "South_Tahoe" },
+          { name: "Sparks", value: "Sparks" },
+          { name: "Spring Creek", value: "Spring_Creek" },
+          { name: "Truckee", value: "Truckee" },
+          { name: "Wooster", value: "Wooster" }
+        ],
+        Southern: [
+          { name: "Boulder City", value: "Boulder_City" },
+          { name: "Democracy Prep", value: "Democracy_Prep" },
+          { name: "Moapa Valley", value: "Moapa_Valley" },
+          { name: "Pahrump Valley", value: "Pahrump_Valley" },
+          { name: "The Meadows", value: "The_Meadows" },
+          { name: "Virgin Valley", value: "Virgin_Valley" }
+        ]
+      },
+      "2A": {
+        Northern: [
+          { name: "Battle Mountain", value: "Battle_Mountain" },
+          { name: "Incline", value: "Incline" },
+          { name: "North Tahoe", value: "North_Tahoe" },
+          { name: "Oasis", value: "Oasis" },
+          { name: "Pershing County", value: "Pershing_County" },
+          { name: "Sierra Lutheran", value: "Sierra_Lutheran" },
+          { name: "Silver Stage", value: "Silver_Stage" },
+          { name: "West Wendover", value: "West_Wendover" },
+          { name: "Yerington", value: "Yerington" }
+        ],
+        Southern: [
+          { name: "Awaken Christian", value: "Awaken_Christian" },
+          { name: "GV Christian", value: "GV_Christian" },
+          { name: "Lake Mead", value: "Lake_Mead" },
+          { name: "Lincoln County", value: "Lincoln_County" },
+          { name: "Needles", value: "Needles" },
+          { name: "White Pine", value: "White_Pine" }
+        ]
+      },
+      "1A": {
+        Northern: [
+          { name: "Carlin", value: "Carlin" },
+          { name: "Coleville", value: "Coleville" },
+          { name: "Eureka", value: "Eureka" },
+          { name: "Excel Christian", value: "Excel_Christian" },
+          { name: "Mineral County", value: "Mineral_County" },
+          { name: "Pyramid Lake", value: "Pyramid_Lake" },
+          { name: "Smith Valley", value: "Smith_Valley" },
+          { name: "Virginia City", value: "Virginia_City" },
+          { name: "Wells", value: "Wells" },
+          { name: "Whittell", value: "Whittell" }
+        ],
+        Southern: [
+          { name: "Beatty", value: "Beatty" },
+          { name: "Beaver Dam", value: "Beaver_Dam" },
+          { name: "Indian Springs", value: "Indian_Springs" },
+          { name: "Laughlin", value: "Laughlin" },
+          { name: "Liberty Baptist", value: "Liberty_Baptist" },
+          { name: "Pahranagat Valley", value: "Pahranagat_Valley" },
+          { name: "Round Mountain", value: "Round_Mountain" },
+          { name: "Sandy Valley", value: "Sandy_Valley" },
+          { name: "Spring Mountain", value: "Spring_Mountain" },
+          { name: "Tonopah", value: "Tonopah" }
+        ]
+      },
+      "Independent": {
+        Northern: [
+          { name: "Hug", value: "Hug" }
+        ],
+        Southern: []
+      }
+    };
+
+
+    /* ===== Helpers ===== */
+    
+    function showOverlay() {
+    overlay.classList.remove('hidden');
+    popover.classList.add('hidden');       // hide any old message
+    overlayText.innerHTML = 'Submitting<br>Please Wait...<br>';
+    baseball.classList.add('spinning');    // start animation
+  }
+
+  // type: "success" | "error"
+  function showSubmissionResult(type, message) {
+    // Keep overlay visible, stop spinner
+    baseball.classList.remove('spinning');
+
+    if (type === 'success') {
+      popoverTitleEl.textContent = 'Submission Successful';
+      popoverMessageEl.textContent = message || 'Your pitch count has been submitted.';
+    } else {
+      popoverTitleEl.textContent = 'Submission Error';
+      popoverMessageEl.textContent = message || 'Something went wrong while submitting. Please try again.';
+    }
+
+    popover.classList.remove('hidden');
+  }
+
+  function hideOverlayAndPopover() {
+    popover.classList.add('hidden');
+    overlay.classList.add('hidden');
+    baseball.classList.remove('spinning');
+  }
+
+  // Close button event
+  popoverCloseBtn.addEventListener('click', hideOverlayAndPopover);
+
+    function setGameCount(count) {
+      const blocks = gamesContainer.querySelectorAll(".game-block");
+      const currentCount = blocks.length;
+
+      if (currentCount < count) {
+        for (let i = currentCount + 1; i <= count; i++) {
+          addGameBlock(i);
+        }
+      } else if (currentCount > count) {
+        for (let i = currentCount; i > count; i--) {
+          const block = gamesContainer.querySelector(`.game-block[data-game-index="${i}"]`);
+          if (block) block.remove();
+        }
+      }
+    }
+
+    //this function
+    function addGameBlock(index) {
+      if (!gameTemplate) return;
+
+      const html = gameTemplate.innerHTML.replace(/__INDEX__/g, String(index));
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = html.trim();
+      const block = wrapper.firstElementChild;
+
+      gamesContainer.appendChild(block);
+
+      //this is wires up opponent dropdowns for Game 2 / 3:
+      initGameBlock(block);
+    }
+
+    function initGameBlock(block) {
+      const idx = block.dataset.gameIndex; // "1", "2", "3", ...
+
+      // Opponent side: cascade division → region → team for THIS game
+      attachCascade("opponent", idx);
+      bindOpponentLocationToggle(idx);
+      updateOpponentUI(idx);
+
+      // Submitting side:
+      // Game 1 has full division/region/team dropdowns.
+      // Games 2+ ONLY have pitchers, so we do NOT call attachCascade("submitting", idx) for them.
+      if (idx === "1") {
+        attachCascade("submitting", 1);
+      }
+
+      // If the submitting team is already chosen, make sure this block shows it
+      if (submittingTeamMeta && submittingTeamRoster.length) {
+        const label = block.querySelector(".submittingTeamDisplay");
+        if (label) {
+          label.textContent =
+            `${submittingTeamMeta.teamName} (${submittingTeamMeta.division} ${submittingTeamMeta.region})`;
+        }
+        // initialize pitcher rows for this game
+        resetPitchersUI(idx);
+      }
+    }
+
+
+    //This function ensures the submitting team only has to select their team once (incase multiple games are being submitted)
+    // Set the team for all games
+    function setSubmittingTeamForAllGames(meta, roster) {
+      submittingTeamMeta   = meta;
+      submittingTeamRoster = roster || [];
+      CURRENT_PLAYERS = (roster || []).map(p => ({
+        name: (p.name || "").trim(),
+        number: p.number  // keep as-is; can be 0
+      }));
+
+      document.querySelectorAll(".game-block").forEach(block => {
+        const idx = block.dataset.gameIndex; // "1", "2", "3", ...
+        const label = block.querySelector(".submittingTeamDisplay");
+        if (label) {
+          if (meta) {
+            label.textContent = `${meta.teamName} (${meta.division} ${meta.region})`;
+          } else {
+            label.textContent = "Select your team in Game 1 first";
+          }
+        }
+
+        if (meta && roster.length) {
+          resetPitchersUI(idx); // Reset pitchers for all games
+        }
+      });
+    }
+
+
+
+    function resetSelect(select, placeholder) {
+      select.innerHTML = "";
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = placeholder;
+      opt.disabled = true;
+      opt.selected = true;
+      select.appendChild(opt);
+    }
+
+    function populateDivisionSelect(selectEl) {
+      resetSelect(selectEl, "Select division…");
+      DIVISIONS_ORDER.forEach(div => {
+        const o = document.createElement("option");
+        o.value = div;
+        o.textContent = div;
+        selectEl.appendChild(o);
+      });
+    }
+
+    function populateRegionSelect(selectEl, division) {
+      resetSelect(selectEl, "Select region…");
+      const regions = ["Northern", "Southern"];
+      regions.forEach(region => {
+        const hasTeams = (TEAMS?.[division]?.[region] || []).length > 0;
+        const o = document.createElement("option");
+        o.value = region;
+        o.textContent = region;
+        o.disabled = !hasTeams; // grey out regions with no teams for this division
+        selectEl.appendChild(o);
+      });
+    }
+
+    function populateTeamSelect(selectEl, division, region) {
+      resetSelect(selectEl, "Select team…");
+      const list = (TEAMS?.[division]?.[region]) || [];
+      list.forEach(team => {
+        const o = document.createElement("option");
+        o.value = team.value;    // underscores version
+        o.textContent = team.name; // display name
+        selectEl.appendChild(o);
+      });
+      selectEl.disabled = list.length === 0;
+    }
+
+    //This function just fills in the current date in the datePicker as a default
+    function setDefaultGameDate() {
+      const input = document.getElementById('gameDate');
+      if (!input) return;
+      if (!input.value) {
+        const now = new Date(); // local time (browser handles your TZ)
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        input.value = `${yyyy}-${mm}-${dd}`;
+      }
+    }
+
+    /* ===== Wire up one side (home/away) ===== */
+    function attachCascade(prefix, gameIndex) {
+      const divisionEl = document.getElementById(`${prefix}Division-${gameIndex}`);
+      const regionEl   = document.getElementById(`${prefix}Region-${gameIndex}`);
+      const teamEl     = document.getElementById(`${prefix}Team-${gameIndex}`);
+
+      if (!divisionEl || !regionEl || !teamEl) {
+        console.warn('attachCascade: elements not found for', prefix, gameIndex);
+        return;
+      }
+
+      // initial state
+      populateDivisionSelect(divisionEl);
+      resetSelect(regionEl, "Select region…");
+      resetSelect(teamEl, "Select team…");
+      regionEl.disabled = true;
+      teamEl.disabled = true;
+
+      divisionEl.addEventListener("change", () => {
+        const div = divisionEl.value;
+        populateRegionSelect(regionEl, div);
+        regionEl.disabled = false;
+
+        // reset teams whenever division changes
+        resetSelect(teamEl, "Select team…");
+        teamEl.disabled = true;
+      });
+
+      regionEl.addEventListener("change", () => {
+        const div = divisionEl.value;
+        const reg = regionEl.value;
+        populateTeamSelect(teamEl, div, reg);
+      });
+    }
+
+    // Toggle in-state / out-of-state UI
+    // Can be called as updateOpponentUI(1) OR as an event handler (receiving the event)
+    function updateOpponentUI(arg) {
+      let gameIndex;
+
+      // If called as updateOpponentUI(1) or updateOpponentUI("1")
+      if (typeof arg === "number" || typeof arg === "string") {
+        gameIndex = String(arg);
+      } else if (arg && arg.target) {
+        // Called as event handler: arg is the Event
+        const radio = arg.target;
+        const name = radio.name; // e.g. "opponentLocation-2"
+        const parts = name.split("-");
+        gameIndex = parts[1] || "1";
+      } else {
+        gameIndex = "1"; // fallback
+      }
+
+      const inStateRadio = document.querySelector(
+        `input[name="opponentLocation-${gameIndex}"][value="in-state"]`
+      );
+      if (!inStateRadio) {
+        console.warn("updateOpponentUI: in-state radio not found for game", gameIndex);
+        return;
+      }
+      const inState = inStateRadio.checked;
+
+      const block = document.querySelector(`.game-block[data-game-index="${gameIndex}"]`);
+      if (!block) return;
+
+      const selWrap     = block.querySelector(".opponentSelectors");
+      const manualWrap  = block.querySelector(".opponentManual");
+      const manualInput = block.querySelector(".opponentSchoolManual");
+
+      const divEl  = document.getElementById(`opponentDivision-${gameIndex}`);
+      const regEl  = document.getElementById(`opponentRegion-${gameIndex}`);
+      const teamEl = document.getElementById(`opponentTeam-${gameIndex}`);
+
+      if (!selWrap || !manualWrap) return;
+
+      if (inState) {
+        // Show dropdowns
+        selWrap.classList.remove("hidden");
+        manualWrap.classList.add("hidden");
+
+        if (divEl)  divEl.disabled  = false;
+        if (regEl)  regEl.disabled  = !divEl.value;
+        if (teamEl) teamEl.disabled = !regEl.value;
+
+        if (manualInput) manualInput.required = false;
+      } else {
+        // Show manual input
+        selWrap.classList.add("hidden");
+        manualWrap.classList.remove("hidden");
+
+        if (divEl) {
+          divEl.disabled = true;
+          divEl.value = "";
+        }
+        if (regEl) {
+          regEl.disabled = true;
+          regEl.value = "";
+        }
+        if (teamEl) {
+          teamEl.disabled = true;
+          teamEl.value = "";
+        }
+
+        if (manualInput) {
+          manualInput.required = true;
+          manualInput.focus();
+        }
+      }
+    }
+
+
+    // Bind radios for a given game (default = Game 1)
+    function bindOpponentLocationToggle(gameIndex = 1) {
+      document
+        .querySelectorAll(`input[name="opponentLocation-${gameIndex}"]`)
+        .forEach(radio => {
+          radio.addEventListener("change", updateOpponentUI); // <-- pass function directly
+        });
+    }
+
+
+
+    // Holds the roster array once loaded
+    let ROSTERS = [];
+
+    // Utility: find a school's roster object by its underscored name (e.g., "Bishop_Manogue")
+    function findSchoolByValue(schoolValue) {
+      // roster_data.json uses "school_name" with underscores already (e.g., Bishop_Manogue)
+      return ROSTERS.find(s => (s.school_name || "").trim() === schoolValue.trim());
+    }
+
+    // Populate players into the Submitting Player dropdown based on the selected team
+    function populateSubmittingPlayers(teamValue) {
+      const noteEl = document.getElementById("submittingPlayerNote");
+
+      if (!teamValue) {
+        CURRENT_PLAYERS = [];
+        if (noteEl) noteEl.textContent = "Pick a team to load its roster.";
+        setSubmittingTeamForAllGames(null, []);
+        return;
+      }
+
+      const school = findSchoolByValue(teamValue);
+      if (!school) {
+        CURRENT_PLAYERS = [];
+        if (noteEl) noteEl.textContent = "No roster found for this school.";
+        setSubmittingTeamForAllGames(null, []);
+        return;
+      }
+
+      const list = Array.isArray(school.boys_roster) ? school.boys_roster.slice() : [];
+      if (!list.length) {
+        CURRENT_PLAYERS = [];
+        if (noteEl) noteEl.textContent = "No roster on file for this school.";
+        setSubmittingTeamForAllGames(null, []);
+        return;
+      }
+
+      list.sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }));
+      const roster = list;
+
+      CURRENT_PLAYERS = roster.map(p => ({
+        name: (p.name || "").trim(),
+        number: p.number
+      }));
+
+
+      const divEl  = document.getElementById("submittingDivision-1");
+      const regEl  = document.getElementById("submittingRegion-1");
+      const teamEl = document.getElementById("submittingTeam-1");
+
+      const division = divEl ? divEl.value : "";
+      const region   = regEl ? regEl.value : "";
+      const teamName = teamEl
+        ? (teamEl.options[teamEl.selectedIndex]?.textContent || "")
+        : "";
+
+      if (noteEl) {
+        noteEl.textContent =
+          "Select each pitcher and enter pitch counts. A new row appears as you choose a player.";
+      }
+
+      // Set the team for all games and call resetPitchersUI with "1" for Game 1
+      setSubmittingTeamForAllGames(
+        {
+          division,
+          region,
+          teamValue, // underscored value, e.g. Bishop_Manogue
+          teamName   // nice display name
+        },
+        roster
+      );
+
+      // Call resetPitchersUI with the correct gameIndex ("1" for Game 1)
+      resetPitchersUI("1");  // <-- Always pass "1" for Game 1
+    }
+
+
+    // Utility: create <option> list for a player select
+    function buildPlayerOptions(selectEl, players, placeholder = "Select player…") {
+      selectEl.innerHTML = "";
+
+      const ph = document.createElement("option");
+      ph.value = "";
+      ph.textContent = placeholder;
+      ph.disabled = true;
+      ph.selected = true;
+      selectEl.appendChild(ph);
+
+      players.forEach(p => {
+        // Support both old string format and new object format
+        const name = (typeof p === "string") ? p : (p?.name || "");
+        const number = (typeof p === "object" && p !== null) ? p.number : null;
+
+        // Show 0 as a real number (don’t treat it as falsy)
+        const hasNumber =
+          number === 0 || number === "0" ||
+          (number !== null && number !== undefined && String(number).trim() !== "");
+
+        const label = hasNumber ? `[${number}] ${name}` : name;
+
+        const o = document.createElement("option");
+        o.value = name;       // IMPORTANT: keep value as the plain name for submission
+        o.textContent = label; // Display includes jersey number
+        selectEl.appendChild(o);
+      });
+    }
+
+
+    // Add one pitcher row (player select + pitch count + remove) for a given game
+    function addPitcherRow(container, gameIndex, prefillName = "", prefillCount = "") {
+      if (!container) {
+        console.error("addPitcherRow: Container is null for game", gameIndex);
+        return;
+      }
+
+      console.log("Adding pitcher row to container for Game", gameIndex); // <-- New log
+
+      const row = document.createElement("div");
+      row.className = "pitcher-row";
+
+      // Player select
+      const playerBox = document.createElement("div");
+      const playerLabel = document.createElement("label");
+      playerLabel.className = "select-label";
+      playerLabel.textContent = "[Jersey] Last, First";
+      const playerSelect = document.createElement("select");
+      playerSelect.className = "player-select";
+      playerSelect.setAttribute("aria-label", "Pitcher");
+
+      buildPlayerOptions(playerSelect, CURRENT_PLAYERS);
+      if (prefillName) playerSelect.value = prefillName;
+
+      // Pitch count input
+      const countBox = document.createElement("div");
+      const countLabel = document.createElement("label");
+      countLabel.className = "select-label";
+      countLabel.textContent = "Pitch Count";
+      const countInput = document.createElement("input");
+      countInput.className = "number-input";
+      countInput.type = "number";
+      countInput.min = "0";
+      countInput.max = "200";
+      countInput.step = "1";
+      countInput.placeholder = "0";
+      countInput.value = prefillCount;
+      countInput.disabled = !prefillName;
+
+      // Optional remove button
+      const isFirstRow = container.querySelectorAll(".pitcher-row").length === 0;
+      const removeBox = document.createElement("div");
+      removeBox.className = "remove-button-container";
+      if (!isFirstRow) {
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "remove-row-btn";
+        removeBtn.textContent = "Remove";
+        removeBtn.addEventListener("click", () => {
+          row.remove();
+        });
+        removeBox.appendChild(removeBtn);
+      }
+
+      // When a player is selected:
+      playerSelect.addEventListener("change", () => {
+        countInput.disabled = !playerSelect.value;
+
+        const rows = Array.from(container.querySelectorAll(".pitcher-row"));
+        if (rows.length && rows[rows.length - 1] === row && playerSelect.value) {
+          addPitcherRow(container, gameIndex); // Recursively add rows if player is selected
+        }
+      });
+
+      playerBox.appendChild(playerLabel);
+      playerBox.appendChild(playerSelect);
+      countBox.appendChild(countLabel);
+      countBox.appendChild(countInput);
+      row.appendChild(playerBox);
+      row.appendChild(countBox);
+      row.appendChild(removeBox);
+      container.appendChild(row);
+
+      console.log("Pitcher row added to Game", gameIndex); // <-- New log
+    }
+
+
+
+    // Reset pitchers UI for a specific game (gameIndex "1", "2", "3", ...)
+    function resetPitchersUI(gameIndex) {
+      const wrap = document.getElementById("pitchersContainer-" + gameIndex);
+      if (!wrap) {
+        console.error("resetPitchersUI: Pitchers container not found for Game", gameIndex);
+        return;
+      }
+
+      console.log("Resetting pitchers UI for Game", gameIndex); // <-- New log
+
+      wrap.innerHTML = "";  // Clear existing rows
+      addPitcherRow(wrap, gameIndex);  // Add the first row
+
+      console.log("Pitcher rows reset for Game", gameIndex); // <-- New log
+
+      if (String(gameIndex) === "1") {
+        const noteEl = document.getElementById("submittingPlayerNote");
+        if (noteEl) {
+          noteEl.textContent =
+            "Select each pitcher and enter pitch counts. A new row appears as you choose a player.";
+        }
+      }
+    }
+
+
+    google.script.run.withSuccessHandler(function(data) {
+      ROSTERS = data;
+      console.log("Roster data loaded:", ROSTERS);
+
+      const teamSel = document.getElementById("submittingTeam-1");
+      if (teamSel && teamSel.value) populateSubmittingPlayers(teamSel.value);
+    }).getRosterDataFromDrive();
+
+
+
+    // Hook into existing team selection changes
+    document.addEventListener("DOMContentLoaded", () => {
+      const submittingTeam = document.getElementById("submittingTeam-1");
+      if (submittingTeam) {
+        submittingTeam.addEventListener("change", (e) => {
+          const teamValue = e.target.value || "";
+          populateSubmittingPlayers(teamValue);
+        });
+      }
+      // If you hide opponent selects for out-of-state, no player dropdown is needed there.
+      // (We only attach player/pitch count to the Submitting Team by design.)
+    });
+
+    // Initialize both cascades and the toggle
+    document.addEventListener("DOMContentLoaded", () => {
+      // Game 1 cascades
+      // Initialize all existing game blocks (at load, that's just Game 1)
+      document.querySelectorAll(".game-block").forEach(initGameBlock);
+
+      setDefaultGameDate();
+    });
+
+
+
+  </script>
+
+  <!-- submit script -->
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const btn = document.getElementById("submitButton");
+    if (btn) btn.addEventListener("click", handleSubmit);
+
+    const coachFieldset = document
+      .querySelector('input[name="coachRole"]')
+      ?.closest('fieldset');
+
+    document.querySelectorAll('input[name="coachRole"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        coachFieldset?.classList.remove('coach-role-error');
+      });
+    });
+  });
+
+
+  function updateSubmitEnabled() {
+    const btn = document.getElementById("submitButton");
+    if (!btn) return;
+
+    const coachRole = document.querySelector('input[name="coachRole"]:checked')?.value || '';
+    btn.disabled = !coachRole;
+    btn.classList.toggle('disabled', !coachRole); // only if you have styles for this
+  }
+
+  function handleSubmit() {
+    // --- REQUIRED: coach role must be selected ---
+
+    // Find the fieldset that contains the coachRole radios (no HTML changes needed)
+    const coachFieldset = document
+      .querySelector('input[name="coachRole"]')
+      ?.closest('fieldset');
+
+    // Clear old error state every submit attempt
+    coachFieldset?.classList.remove('coach-role-error');
+
+    const coachRole = document.querySelector('input[name="coachRole"]:checked')?.value || '';
+    if (!coachRole) {
+      coachFieldset?.classList.add('coach-role-error');
+      coachFieldset?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      // Use your UI messaging (or alert)
+      showSubmissionResult?.('error', 'Please select whether you are the Head Varsity or Head JV coach.');
+      return;
+    }
+
+    showOverlay();
+
+    const gameDate = document.getElementById('gameDate')?.value || '';
+    const gameType = document.querySelector('input[name="gameType"]:checked')?.value || 'single_game';
+
+    const gamesContainer = document.getElementById('gamesContainer');
+    const gameBlocks = Array.from(gamesContainer.querySelectorAll('.game-block'));
+
+    const gamesPayload = gameBlocks.map(block => {
+      const idx = block.dataset.gameIndex;  // "1", "2", "3", ...
+
+      // --- Submitting team ---------------------------------------------
+      let submitting = { division: '', region: '', team: '' };
+
+      if (idx === '1') {
+        const divEl  = document.getElementById('submittingDivision-1');
+        const regEl  = document.getElementById('submittingRegion-1');
+        const teamEl = document.getElementById('submittingTeam-1');
+
+        submitting.division = divEl ? divEl.value : '';
+        submitting.region   = regEl ? regEl.value : '';
+        submitting.team     = teamEl ? teamEl.value : '';
+      } else if (submittingTeamMeta) {
+        submitting.division = submittingTeamMeta.division || '';
+        submitting.region   = submittingTeamMeta.region   || '';
+        submitting.team     = submittingTeamMeta.teamValue || submittingTeamMeta.teamName || '';
+      }
+
+      // --- Opponent ----------------------------------------------------
+      const gameIndex = idx;
+
+      const opponentLocationRadio = block.querySelector(
+        `input[name="opponentLocation-${gameIndex}"]:checked`
+      );
+
+      let opponent = {};
+      const locationVal = opponentLocationRadio ? opponentLocationRadio.value : 'in-state';
+
+      if (locationVal === 'in-state') {
+        const oppDivEl  = document.getElementById(`opponentDivision-${gameIndex}`);
+        const oppRegEl  = document.getElementById(`opponentRegion-${gameIndex}`);
+        const oppTeamEl = document.getElementById(`opponentTeam-${gameIndex}`);
+
+        opponent = {
+          type: 'in-state',
+          division: oppDivEl ? oppDivEl.value : '',
+          region:   oppRegEl ? oppRegEl.value : '',
+          team:     oppTeamEl ? oppTeamEl.value : '',
+        };
+      } else {
+        const manualInput = document.getElementById(`opponentSchoolManual-${gameIndex}`);
+        opponent = {
+          type: 'out-of-state',
+          school: manualInput ? manualInput.value : ''
+        };
+      }
+
+      // --- Pitchers (per game) ----------------------------------------
+      const pitchersContainer = block.querySelector('.pitchersContainer');
+      const pitcherRows = pitchersContainer
+        ? Array.from(pitchersContainer.querySelectorAll('.pitcher-row'))
+        : [];
+
+      const pitchers = pitcherRows.map(row => {
+        const player = row.querySelector('.player-select')?.value || '';
+        const pitches = row.querySelector('.number-input')?.value || '';
+
+        return {
+          playerId: player,
+          pitches: pitches === '' ? '' : Number(pitches)
+        };
+      }).filter(p => p.playerId && p.pitches !== '');
+
+      return { gameIndex, submitting, opponent, pitchers };
+    });
+
+    const payload = {
+      gameDate,
+      gameType,
+      coachRole,          
+      games: gamesPayload
+    };
+
+    console.log('Submitting payload:', JSON.stringify(payload, null, 2));
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (result && result.success) {
+          showSubmissionResult('success', result.message);
+        } else {
+          showSubmissionResult('success', 'Submission completed.');
+        }
+      })
+      .withFailureHandler(function(err) {
+        const msg = (err && err.message) || 'Unexpected error during submission.';
+        showSubmissionResult('error', msg);
+      })
+      .submitPitchData(payload);
+  }
+</script>
+
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const gameTypeRadios = document.querySelectorAll('input[name="gameType"]');
+      const multiGameCountSelect = document.getElementById('multiGameCount');
+
+      // --- Game type / count handling -----------------------------------------
+
+      function onGameTypeChange() {
+        const value = document.querySelector('input[name="gameType"]:checked').value;
+
+        if (value === "single_game") {
+          multiGameCountSelect.classList.add("hidden");
+          setGameCount(1);
+        } else {
+          multiGameCountSelect.classList.remove("hidden");
+          const count = parseInt(multiGameCountSelect.value, 10) || 2;
+          setGameCount(count);
+        }
+
+        if (submittingTeamMeta && submittingTeamRoster.length) {
+          setSubmittingTeamForAllGames(submittingTeamMeta, submittingTeamRoster);
+        }
+      }
+
+      multiGameCountSelect.addEventListener("change", function () {
+        const count = parseInt(this.value, 10) || 2;
+        setGameCount(count);
+
+        if (submittingTeamMeta && submittingTeamRoster.length) {
+          setSubmittingTeamForAllGames(submittingTeamMeta, submittingTeamRoster);
+        }
+      });
+
+
+      gameTypeRadios.forEach(r => r.addEventListener('change', onGameTypeChange));
+      // --- Per-game initialization (opponent toggles, later rosters, etc.) -----
+
+      function initGameBlock(block) {
+        const gameIndex = block.dataset.gameIndex;
+
+        // Opponent location radios are named opponentLocation-<index>
+        const opponentLocationRadios = block.querySelectorAll('input[name="opponentLocation-' + gameIndex + '"]');
+        const opponentSelectors = block.querySelector('.opponentSelectors');
+        const opponentManual = block.querySelector('.opponentManual');
+
+        // Toggle in-state / out-of-state UI for a given game (default = Game 1)
+        
+
+
+        opponentLocationRadios.forEach(radio => {
+          radio.addEventListener('change', updateOpponentUI);
+        });
+        updateOpponentUI();
+      }
+
+      // Initialize Game 1 (already in the DOM)
+      document.querySelectorAll('.game-block').forEach(initGameBlock);
+
+      // Ensure UI matches default (single game first)
+      onGameTypeChange();
+
+    });
+
+
+  </script>
+
+
+</html>
