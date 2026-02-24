@@ -728,7 +728,7 @@
           fetch(`/api/getDisputeContext?vid=${encodeURIComponent(VID)}&school=${encodeURIComponent(SCHOOL_VALUE)}`)
             .then(async r => {
               const data = await r.json().catch(() => ({}));
-              if (!r.ok) throw new Error(data?.error || data?.details || `HTTP ${r.status}`);
+              if (!r.ok) throw new Error(data?.details || data?.error || `HTTP ${r.status}`);
               return data;
             })
         ])
@@ -1141,4 +1141,5 @@
 
   </body>
 </html>
+
 
