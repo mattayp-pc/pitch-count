@@ -1083,13 +1083,13 @@
           };
 
           // Local testing
-          if (typeof google === "undefined" || !google.script || !google.script.run) {
-            console.log("Dispute payload:", payload);
-            status.textContent =
-              "Form would be submitted to Apps Script. (Check console for payload.)";
-            status.className = "note ok";
-            return;
-          }
+          // if (typeof google === "undefined" || !google.script || !google.script.run) {
+          //   console.log("Dispute payload:", payload);
+          //   status.textContent =
+          //     "Form would be submitted to Apps Script. (Check console for payload.)";
+          //   status.className = "note ok";
+          //   return;
+          // }
 
           btn.disabled = true;
           status.textContent = "Submitting dispute...";
@@ -1141,3 +1141,4 @@
 
   </body>
 </html>
+
