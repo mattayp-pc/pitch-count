@@ -1638,13 +1638,20 @@
     }
 
 
-    google.script.run.withSuccessHandler(function(data) {
-      ROSTERS = data;
-      console.log("Roster data loaded:", ROSTERS);
+  fetch('/api/roster')
+  .then(r => r.json())
+  .then(data => {
+    ROSTERS = data;
+    console.log("Roster data loaded:", ROSTERS);
 
-      const teamSel = document.getElementById("submittingTeam-1");
-      if (teamSel && teamSel.value) populateSubmittingPlayers(teamSel.value);
-    }).getRosterDataFromDrive();
+    const teamSel = document.getElementById("submittingTeam-1");
+    if (teamSel && teamSel.value) populateSubmittingPlayers(teamSel.value);
+  })
+  .catch(err => {
+    console.error('Failed to load roster:', err);
+    // Optional: show a UI message somewhere
+  });
+   
 
 
 
@@ -1807,19 +1814,26 @@
 
     console.log('Submitting payload:', JSON.stringify(payload, null, 2));
 
-    google.script.run
-      .withSuccessHandler(function(result) {
-        if (result && result.success) {
-          showSubmissionResult('success', result.message);
-        } else {
-          showSubmissionResult('success', 'Submission completed.');
-        }
-      })
-      .withFailureHandler(function(err) {
-        const msg = (err && err.message) || 'Unexpected error during submission.';
-        showSubmissionResult('error', msg);
-      })
-      .submitPitchData(payload);
+    fetch('/api/submitPitchData', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ payload })
+    })
+    .then(async (r) => {
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data?.error || data?.details || `HTTP ${r.status}`);
+      return data;
+    })
+    .then(result => {
+      if (result && result.success) {
+        showSubmissionResult('success', result.message);
+      } else {
+        showSubmissionResult('success', 'Submission completed.');
+      }
+    })
+    .catch(err => {
+      showSubmissionResult('error', err.message || 'Unexpected error during submission.');
+    });
   }
 </script>
 
