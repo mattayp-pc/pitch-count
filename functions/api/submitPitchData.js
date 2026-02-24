@@ -119,16 +119,16 @@ export async function onRequestPost({ request, env }) {
 
       // Send each email job (sequential is simplest; you can Promise.all if you prefer)
       for (const job of emailJobs) {
-        emailsAttempted++;
-
         const coach = pickOpponentCoach_(coachDirectory, job.opponentSchool, job.coachRole);
         if (!coach?.email) continue;
-
+      
+        emailsAttempted++;
+      
         const relayResp = await fetch(relayUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            relayKey: relayKey,                 // <-- IMPORTANT (goes in body)
+            relayKey: relayKey,
             opponentSchool: job.opponentSchool,
             submittingSchool: job.submittingSchool,
             formattedDate: job.formattedDate,
@@ -140,8 +140,12 @@ export async function onRequestPost({ request, env }) {
             siteBaseUrl: siteBaseUrl
           })
         });
-
-        if (relayResp.ok) emailsSent++;
+      
+        if (relayResp.ok) {
+          emailsSent++;
+        } else {
+          console.log("Email relay failed", relayResp.status, await relayResp.text());
+        }
       }
     }
 
