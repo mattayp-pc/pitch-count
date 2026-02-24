@@ -28,7 +28,7 @@
         max-width: 1200px; /* was 1100px */
         margin: 24px auto 50px;
         padding: 0 10px;
-      } 
+      }
 
       /* Header */
       .header {
@@ -711,85 +711,38 @@
         status.textContent = "";
         status.className = "note info";
 
-        // Local testing (no google.script.run)
-        if (typeof google === "undefined" || !google.script || !google.script.run) {
-          console.log("Local mode - using window.location.search for params:", { VID, SCHOOL_VALUE });
+        // Show loading overlay
+        showOverlay("Loading Pitcher Details<br>Please Wait...");
 
-          ROSTERS = [
-            {
-              school_name: "Silverado",
-              boys_roster: [{ name: "Test Pitcher A" }, { name: "Test Pitcher B" }]
-            }
-          ];
-          DISPUTE_CONTEXT = {
-            matchup: "Silverado vs Sample Opponent",
-            dateDisplay: "04/01/2025",
-            pitchers: [
-              {
-                id: "p1",
-                name: "Test Pitcher A",
-                teamDisplay: "Silverado",
-                schoolValue: "Silverado",
-                recordedPitchCount: 80
-              },
-              {
-                id: "p2",
-                name: "Opp Pitcher 1",
-                teamDisplay: "Sample Opponent",
-                schoolValue: "Sample_Opponent",
-                recordedPitchCount: 65
-              }
-            ]
-          };
-          applyDisputeContext(DISPUTE_CONTEXT);
+        // You already called parseQueryParams() on DOMContentLoaded
+        if (!VID) {
+          hideOverlay();
+          document.getElementById("pitchersContainer").innerHTML =
+            '<p class="loading-text">Missing or invalid dispute link (no VID). Please contact the league director.</p>';
           return;
         }
 
-        // -------- REAL Apps Script environment --------
-        google.script.url.getLocation(function (loc) {
-          // Show loading overlay immediately
-          showOverlay("Loading Pitcher Details<br>Please Wait...");
-
-          const p = (loc && loc.parameter) || {};
-          VID = p.vid || p.VID || "";
-          SCHOOL_VALUE = (p.school || "").trim();
-          COACH_NAME = decodeURIComponent(p.coachName || "");
-          COACH_EMAIL = decodeURIComponent(p.coachEmail || "");
-
-          if (!VID) {
-            hideOverlay();
-            document.getElementById("pitchersContainer").innerHTML =
-              '<p class="loading-text">Missing or invalid dispute link (no VID). Please contact the league director.</p>';
-            return;
-          }
-
-          // Step 1: Load rosters
-          google.script.run
-            .withSuccessHandler(function (rosters) {
-              ROSTERS = rosters || [];
-
-              // Step 2: Load the dispute context
-              google.script.run
-                .withSuccessHandler(function (ctx) {
-                  hideOverlay();   // done loading data!
-                  DISPUTE_CONTEXT = ctx || {};
-                  applyDisputeContext(DISPUTE_CONTEXT);
-                })
-                .withFailureHandler(function (err) {
-                  hideOverlay();
-                  console.error("getDisputeContext error:", err);
-                  document.getElementById("pitchersContainer").innerHTML =
-                    '<p class="loading-text">Unable to load game details. Please contact the league director.</p>';
-                })
-                .getDisputeContext(VID, SCHOOL_VALUE);
+        // Load roster + dispute context from Cloudflare backend
+        Promise.all([
+          fetch("/api/roster").then(r => r.json()),
+          fetch(`/api/getDisputeContext?vid=${encodeURIComponent(VID)}&school=${encodeURIComponent(SCHOOL_VALUE)}`)
+            .then(async r => {
+              const data = await r.json().catch(() => ({}));
+              if (!r.ok) throw new Error(data?.error || data?.details || `HTTP ${r.status}`);
+              return data;
             })
-            .withFailureHandler(function (err) {
-              hideOverlay();
-              console.error("getRosterDataFromDrive error:", err);
-              document.getElementById("pitchersContainer").innerHTML =
-                '<p class="loading-text">Unable to load roster data. Please contact the league director.</p>';
-            })
-            .getRosterDataFromDrive();
+        ])
+        .then(([rosters, ctx]) => {
+          ROSTERS = rosters || [];
+          DISPUTE_CONTEXT = ctx || {};
+          hideOverlay();
+          applyDisputeContext(DISPUTE_CONTEXT);
+        })
+        .catch(err => {
+          console.error("initPage error:", err);
+          hideOverlay();
+          document.getElementById("pitchersContainer").innerHTML =
+            '<p class="loading-text">Unable to load game details. Please contact the league director.</p>';
         });
       }
 
@@ -1144,37 +1097,47 @@
 
           showOverlay("Submitting<br>Please Wait...");
 
-          google.script.run
-            .withSuccessHandler(function (message) {
-              btn.disabled = false;
+          btn.disabled = true;
+          status.textContent = "Submitting dispute...";
+          status.className = "note info";
 
-              showResultPopover(
-                "Dispute Submitted",
-                message || "Dispute submitted successfully. Thank you."
-              );
+          showOverlay("Submitting<br>Please Wait...");
 
-              status.textContent =
-                message || "Dispute submitted successfully. Thank you.";
-              status.className = "note ok";
-            })
-            .withFailureHandler(function (err) {
-              console.error(err);
-              btn.disabled = false;
+          fetch("/api/submitPitchDispute", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          })
+          .then(async (r) => {
+            const data = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error(data?.error || data?.details || `HTTP ${r.status}`);
+            return data;
+          })
+          .then((resp) => {
+            btn.disabled = false;
 
-              showResultPopover(
-                "Submission Error",
-                "There was a problem submitting your dispute. Please try again or contact the league director."
-              );
+            const message = resp?.message || "Dispute submitted successfully. Thank you.";
+            showResultPopover("Dispute Submitted", message);
 
-              status.textContent =
-                "There was a problem submitting your dispute. Please try again or contact the league director.";
-              status.className = "note err";
-            })
-            .submitPitchDispute(payload);
+            status.textContent = message;
+            status.className = "note ok";
+          })
+          .catch((err) => {
+            console.error(err);
+            btn.disabled = false;
+
+            showResultPopover(
+              "Submission Error",
+              "There was a problem submitting your dispute. Please try again or contact the league director."
+            );
+
+            status.textContent =
+              "There was a problem submitting your dispute. Please try again or contact the league director.";
+            status.className = "note err";
+          });
         });
       }
     </script>
 
   </body>
 </html>
-
