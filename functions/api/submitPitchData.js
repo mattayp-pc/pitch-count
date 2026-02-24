@@ -14,17 +14,19 @@ export async function onRequestPost({ request, env }) {
     const tabName = String(games?.[0]?.submitting?.team || '').trim();
     if (!tabName) return json({ success:false, error:'Submitting team missing (game 1)' }, 400);
 
-    // Build rows like your Apps Script did (I:O = 7 columns)
+    const coachRole = String(submission.coachRole || 'VARSITY').trim().toUpperCase(); // "VARSITY" or "JV"
     const formattedDate = formatMDY(submission.gameDate); // M/d/yyyy string
 
     const allRows = [];
+    const emailJobs = []; // collect per in-state game
+
     for (const game of games) {
       const opp = game?.opponent || {};
       const isOutOfState = opp.type === 'out-of-state';
 
-      const opponentName = isOutOfState
+      const opponentSchool = isOutOfState
         ? String(opp.school || '').trim()
-        : String(opp.team || '').trim();
+        : String(opp.team || '').trim();   // underscored value (e.g. "Del_Sol")
 
       const pitchers = Array.isArray(game.pitchers) ? game.pitchers : [];
       const perGamePitchers = pitchers
@@ -36,19 +38,35 @@ export async function onRequestPost({ request, env }) {
 
       if (!perGamePitchers.length) continue;
 
-      // One VID per in-state game (same as before)
-      const vid = (!isOutOfState && opponentName) ? crypto.randomUUID() : '';
+      // One VID per in-state game
+      const vid = (!isOutOfState && opponentSchool) ? crypto.randomUUID() : '';
 
+      // Build sheet rows (I:O)
       for (const p of perGamePitchers) {
         allRows.push([
           formattedDate,               // I Date
-          opponentName,                // J Opponent
+          opponentSchool,              // J Opponent
           p.name,                      // K Player
           Number(p.count),             // L Pitch Count
           '',                          // M Verification Date/Time
           '',                          // N Verified By
           vid                          // O VID (blank for out-of-state)
         ]);
+      }
+
+      // Email job for in-state only
+      if (vid) {
+        emailJobs.push({
+          opponentSchool,                 // ex: "Del_Sol"
+          submittingSchool: tabName,      // ex: "SECTA"
+          formattedDate,
+          verificationId: vid,
+          coachRole,
+          opponentPitchers: perGamePitchers.map(x => ({
+            name: x.name,
+            pitchCount: Number(x.count)
+          }))
+        });
       }
     }
 
@@ -59,7 +77,7 @@ export async function onRequestPost({ request, env }) {
     // Ensure the tab exists (create if missing)
     await ensureSheetTabExists({ token, sheetId, tabName });
 
-    // Find first blank in column I starting at row 4 (scan a reasonable window)
+    // Find first blank in column I starting at row 4
     const startRow = await findFirstBlankRowInColI({ token, sheetId, tabName, fromRow: 4, maxRows: 5000 });
 
     // Write I:O starting at startRow
@@ -80,12 +98,63 @@ export async function onRequestPost({ request, env }) {
       return json({ success:false, error:'Sheets API write error', details: await putResp.text() }, 500);
     }
 
+    // -------- EMAIL RELAY (after successful write) --------
+    // Optional: only run if env vars present
+    const relayUrl = env.EMAIL_RELAY_URL;
+    const relayKey = env.EMAIL_RELAY_KEY;
+    const siteBaseUrl = env.SITE_BASE_URL; // e.g. https://pitch-count.pages.dev or custom domain
+    const coachSheetId = env.COACH_EMAIL_SHEET_ID;
+    const coachSheetName = env.COACH_EMAIL_SHEET_NAME || 'Home';
+
+    let emailsAttempted = 0;
+    let emailsSent = 0;
+
+    if (relayUrl && relayKey && siteBaseUrl && coachSheetId) {
+      // Read coach directory once
+      const coachDirectory = await fetchCoachDirectory_({
+        token,
+        spreadsheetId: coachSheetId,
+        tabName: coachSheetName
+      });
+
+      // Send each email job (sequential is simplest; you can Promise.all if you prefer)
+      for (const job of emailJobs) {
+        emailsAttempted++;
+
+        const coach = pickOpponentCoach_(coachDirectory, job.opponentSchool, job.coachRole);
+        if (!coach?.email) continue;
+
+        const relayResp = await fetch(relayUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Relay-Key": relayKey
+          },
+          body: JSON.stringify({
+            opponentSchool: job.opponentSchool,
+            submittingSchool: job.submittingSchool,
+            formattedDate: job.formattedDate,
+            opponentPitchers: job.opponentPitchers,
+            verificationId: job.verificationId,
+            coachRole: job.coachRole,
+            coachName: coach.name || "",
+            coachEmail: coach.email || "",
+            siteBaseUrl
+          })
+        });
+
+        if (relayResp.ok) emailsSent++;
+      }
+    }
+
     return json({
       success: true,
       message: `Submitted ${allRows.length} pitcher(s) for ${tabName} on ${formattedDate}.`,
       team: tabName,
       date: formattedDate,
-      count: allRows.length
+      count: allRows.length,
+      emailsAttempted,
+      emailsSent
     });
 
   } catch (err) {
@@ -120,13 +189,12 @@ async function findFirstBlankRowInColI({ token, sheetId, tabName, fromRow, maxRo
   const data = await resp.json();
 
   const values = Array.isArray(data.values) ? data.values : [];
-  // values rows may be [] for blank rows (interior blanks show up as empty arrays if there are later values)
   for (let i = 0; i < maxRows; i++) {
     const row = values[i];
     const v = (row && row[0] != null) ? String(row[0]).trim() : '';
     if (!v) return fromRow + i;
   }
-  return fromRow + maxRows; // fallback: write after scan window
+  return fromRow + maxRows;
 }
 
 async function ensureSheetTabExists({ token, sheetId, tabName }) {
@@ -152,6 +220,59 @@ async function ensureSheetTabExists({ token, sheetId, tabName }) {
 
   if (!batchResp.ok) throw new Error(`addSheet failed: ${await batchResp.text()}`);
 }
+
+/**
+ * Reads coach info once from Home sheet.
+ * Expected columns E..J:
+ *   E teamValue, F varsityName, G varsityEmail, H (unused), I jvName, J jvEmail
+ */
+async function fetchCoachDirectory_({ token, spreadsheetId, tabName }) {
+  const range = `${quoteSheetName(tabName)}!E2:J`;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}?majorDimension=ROWS`;
+
+  const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!resp.ok) throw new Error(`Coach sheet read failed: ${await resp.text()}`);
+
+  const data = await resp.json();
+  const rows = Array.isArray(data.values) ? data.values : [];
+
+  const map = new Map(); // teamValueLower -> { varsity:{name,email}, jv:{name,email} }
+
+  for (const r of rows) {
+    const team = String(r?.[0] || '').trim();
+    if (!team) continue;
+
+    map.set(team.toLowerCase(), {
+      varsity: { name: String(r?.[1] || '').trim(), email: String(r?.[2] || '').trim() },
+      jv:      { name: String(r?.[4] || '').trim(), email: String(r?.[5] || '').trim() }
+    });
+  }
+
+  return map;
+}
+
+function pickOpponentCoach_(directoryMap, opponentTeamValue, coachRole) {
+  const key = String(opponentTeamValue || '').trim().toLowerCase();
+  const rec = directoryMap?.get(key);
+  if (!rec) return null;
+
+  const role = String(coachRole || 'VARSITY').toUpperCase();
+  const varsity = rec.varsity;
+  const jv = rec.jv;
+
+  // Match your old fallback logic
+  if (role === 'JV') {
+    if (jv?.email) return jv;
+    if (varsity?.email) return varsity;
+    return null;
+  } else {
+    if (varsity?.email) return varsity;
+    if (jv?.email) return jv;
+    return null;
+  }
+}
+
+/* ===== Google service account token helpers (unchanged) ===== */
 
 async function getGoogleAccessToken(env) {
   const now = Math.floor(Date.now() / 1000);
