@@ -126,11 +126,9 @@ export async function onRequestPost({ request, env }) {
 
         const relayResp = await fetch(relayUrl, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Relay-Key": relayKey
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            relayKey: relayKey,                 // <-- IMPORTANT (goes in body)
             opponentSchool: job.opponentSchool,
             submittingSchool: job.submittingSchool,
             formattedDate: job.formattedDate,
@@ -139,7 +137,7 @@ export async function onRequestPost({ request, env }) {
             coachRole: job.coachRole,
             coachName: coach.name || "",
             coachEmail: coach.email || "",
-            siteBaseUrl
+            siteBaseUrl: siteBaseUrl
           })
         });
 
