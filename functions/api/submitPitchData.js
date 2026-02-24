@@ -95,7 +95,11 @@ export async function onRequestPost({ request, env }) {
     });
 
     if (!putResp.ok) {
-      return json({ success:false, error:'Sheets API write error', details: await putResp.text() }, 500);
+      const t = await putResp.text();
+      return json(
+        { success:false, error:`Sheets API write error (${putResp.status})`, details: t },
+        500
+      );
     }
 
     // -------- EMAIL RELAY (after successful write) --------
