@@ -115,7 +115,13 @@ export async function onRequestPost({ request, env }) {
       body: JSON.stringify({ values: rows })
     });
 
-    if (!resp.ok) return json({ error: "Sheets API append error", details: await resp.text() }, 500);
+    if (!resp.ok) {
+      const t = await resp.text();
+      return json(
+        { ok:false, error:`Sheets API append error (${resp.status})`, details: t },
+        500
+      );
+    }
 
     return json({ message: `Dispute recorded for ${school || "(unknown school)"} (VID ${vid}).` });
 
