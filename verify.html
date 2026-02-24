@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Pitch Count Verification</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 24px; }
+    .card { max-width: 640px; margin: 0 auto; padding: 18px; border: 1px solid #ddd; border-radius: 12px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2 id="title">Recording your verification…</h2>
+    <p id="msg">Please wait.</p>
+  </div>
+
+  <script>
+    const qs = new URLSearchParams(location.search);
+    const vid = qs.get("vid") || "";
+    const coachName = qs.get("coachName") || "";
+    const coachEmail = qs.get("coachEmail") || "";
+
+    if (!vid) {
+      document.getElementById("title").textContent = "Missing verification id";
+      document.getElementById("msg").textContent = "This link is missing a VID.";
+    } else {
+      fetch(`/api/verifyPitchCounts?vid=${encodeURIComponent(vid)}&coachName=${encodeURIComponent(coachName)}&coachEmail=${encodeURIComponent(coachEmail)}`)
+        .then(r => r.json().then(j => ({ ok: r.ok, j })))
+        .then(({ ok, j }) => {
+          if (!ok) throw new Error(j?.error || j?.details || "Verification failed");
+          document.getElementById("title").textContent = "Thank you!";
+          document.getElementById("msg").textContent = j?.message || "Your verification has been recorded.";
+        })
+        .catch(err => {
+          document.getElementById("title").textContent = "Verification error";
+          document.getElementById("msg").textContent = err.message || "Could not record verification.";
+        });
+    }
+  </script>
+</body>
+</html>
