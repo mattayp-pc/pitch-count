@@ -12,7 +12,49 @@ export async function onRequestPost({ request, env }) {
     const disputesTab = "Disputes";
 
     // Ensure disputes tab + header exists
-    await ensureDisputesTab({ token, spreadsheetId: disputesSheetId, tabName: disputesTab });
+    async function ensureDisputesTab({ token, spreadsheetId, tabName }) {
+      // 1) ensure tab exists
+      const metaUrl = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}?fields=sheets.properties.title`;
+      const metaResp = await fetch(metaUrl, { headers: { Authorization: `Bearer ${token}` } });
+      if (!metaResp.ok) throw new Error(await metaResp.text());
+      const meta = await metaResp.json();
+    
+      const titles = (meta.sheets || []).map(s => s?.properties?.title).filter(Boolean);
+      if (!titles.includes(tabName)) {
+        const batchUrl = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}:batchUpdate`;
+        const addResp = await fetch(batchUrl, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ requests: [{ addSheet: { properties: { title: tabName } } }] })
+        });
+        if (!addResp.ok) throw new Error(await addResp.text());
+      }
+    
+      // 2) if A1 already has something, don’t overwrite headers
+      const a1Range = `${quoteSheetName(tabName)}!A1:A1`;
+      const getUrl = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(a1Range)}`;
+      const getResp = await fetch(getUrl, { headers: { Authorization: `Bearer ${token}` } });
+      const getData = await getResp.json().catch(() => ({}));
+      const a1 = (getData?.values?.[0]?.[0] || "").toString().trim();
+      if (a1) return; // headers exist
+    
+      // 3) write headers once
+      const headers = [[
+        "Timestamp","VID","Disputing School","Disputing Coach Name","Disputing Coach Email","Disputing Coach Phone",
+        "Recorded School Name","Recorded Coach Name","Recorded Coach Email","Recorded Coach Phone",
+        "Recorded Pitcher","Recorded Count","Dispute Type","Proposed Pitcher","Proposed Count",
+        "Missing Pitcher?","Disputing Coach Notes","Admin Notes"
+      ]];
+    
+      const range = `${quoteSheetName(tabName)}!A1:R1`;
+      const putUrl = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}?valueInputOption=RAW`;
+      const putResp = await fetch(putUrl, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ values: headers })
+      });
+      if (!putResp.ok) throw new Error(await putResp.text());
+    }
 
     const vid        = payload.vid || "";
     const school     = payload.school || "";
