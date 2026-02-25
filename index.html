@@ -1161,79 +1161,117 @@
   popoverCloseBtn.addEventListener('click', closeResultAndReset);
 
   // Call this instead of calling hideOverlayAndPopover() directly
+// Use this for BOTH the X close and an OK button (if you add one)
 function closeResultAndReset() {
-  hideOverlayAndPopover();
-  resetForNewSubmission();
+  hideOverlayAndPopover();   // your existing function
+  resetForNewSubmission();   // new function below
 }
 
-// Hook BOTH close controls to the same behavior
-popoverCloseBtn?.addEventListener('click', closeResultAndReset);
+// Hook the X close
+document.getElementById('popover-close')?.addEventListener('click', closeResultAndReset);
 
-// If you have an OK button in the popover:
-document.getElementById('popover-ok')?.addEventListener('click', closeResultAndReset);
-
-// Optional: ESC key closes + resets too
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !overlay.classList.contains('hidden')) {
-    closeResultAndReset();
-  }
-});
+// If you add an OK button later, hook it too:
+// document.getElementById('popover-ok')?.addEventListener('click', closeResultAndReset);
 
 function resetForNewSubmission() {
-  // --- 1) Clear any in-memory state your page uses ---
+  // ---------------------------
+  // 1) Clear any global state
+  // ---------------------------
   if (typeof submittingTeamMeta !== 'undefined') submittingTeamMeta = null;
   if (typeof submittingTeamRoster !== 'undefined') submittingTeamRoster = [];
   if (typeof CURRENT_PLAYERS !== 'undefined') CURRENT_PLAYERS = [];
 
-  // --- 2) Reset overlay/popover text back to defaults (optional but nice) ---
-  const overlayTextEl = overlay?.querySelector('.overlay-text');
-  if (overlayTextEl) overlayTextEl.textContent = 'Submitting…';
-  document.getElementById('popover-title') && (document.getElementById('popover-title').textContent = '');
-  document.getElementById('popover-message') && (document.getElementById('popover-message').textContent = '');
+  // ---------------------------
+  // 2) Reset top controls
+  // ---------------------------
+  // date
+  const gameDate = document.getElementById('gameDate');
+  if (gameDate) gameDate.value = '';
 
-  // --- 3) Reset the form (fast way to clear inputs) ---
-  // If you have a specific form id, use it here:
-  const form = document.querySelector('form'); // or document.getElementById('pitchForm')
-  form?.reset();
+  // submission type -> Single game (default)
+  const singleRadio = document.querySelector('input[name="gameType"][value="single_game"]');
+  const multiRadio  = document.querySelector('input[name="gameType"][value="multi_game"]');
+  if (singleRadio) singleRadio.checked = true;
+  if (multiRadio)  multiRadio.checked  = false;
 
-  // --- 4) Reset your dependent dropdowns to "fresh" state ---
-  resetSelectToPlaceholder('divisionSelect', { disabled: false });
-  resetSelectToPlaceholder('regionSelect',   { disabled: true  });
-  resetSelectToPlaceholder('teamSelect',     { disabled: true  });
-
-  // --- 5) Remove any dynamically added game blocks (keep just the template) ---
-  // If your template is inside gamesContainer, this keeps the template and removes rendered blocks
-  if (typeof gamesContainer !== 'undefined' && gamesContainer) {
-    gamesContainer.querySelectorAll('.game-block').forEach(el => el.remove());
+  const multiCount = document.getElementById('multiGameCount');
+  if (multiCount) {
+    multiCount.value = '2';
+    multiCount.classList.add('hidden');
   }
 
-  // If you always want 1 fresh game block present after reset, call your builder here:
-  // addGameBlock?.();  // <-- uncomment if you have this function
+  // coach role -> clear both (your HTML has no default checked)
+  document.querySelectorAll('input[name="coachRole"]').forEach(r => (r.checked = false));
 
-  // --- 6) Clear validation styling/messages (adjust class names to yours) ---
-  document.querySelectorAll('.invalid, .error').forEach(el => el.classList.remove('invalid', 'error'));
+  // ---------------------------
+  // 3) Remove generated games (keep Game 1)
+  // ---------------------------
+  const gamesContainer = document.getElementById('gamesContainer');
+  if (gamesContainer) {
+    gamesContainer
+      .querySelectorAll('.game-block')
+      .forEach(block => {
+        const idx = block.getAttribute('data-game-index');
+        if (idx !== '1') block.remove();
+      });
+  }
 
-  // --- 7) If you store drafts in localStorage, clear them here ---
-  // (Add your real keys if/when you use them)
-  // ['pitchCountDraft', 'pitchCountFormState'].forEach(k => localStorage.removeItem(k));
+  // ---------------------------
+  // 4) Reset Game 1 (Submitting side)
+  // ---------------------------
+  resetSelectToFirst('submittingDivision-1', { disabled: false, keepFirstOnly: false });
+  resetSelectToFirst('submittingRegion-1',   { disabled: true,  keepFirstOnly: false });
+  resetSelectToFirst('submittingTeam-1',     { disabled: true,  keepFirstOnly: true  });
 
-  // --- 8) UX: scroll to top and focus first control ---
+  // Clear pitchers area for Game 1
+  const pc1 = document.getElementById('pitchersContainer-1');
+  if (pc1) pc1.innerHTML = '';
+
+  // ---------------------------
+  // 5) Reset Game 1 (Opponent side)
+  // ---------------------------
+  // Opponent location radios (default is in-state checked)
+  const inState  = document.querySelector('input[name="opponentLocation-1"][value="in-state"]');
+  const outState = document.querySelector('input[name="opponentLocation-1"][value="out-of-state"]');
+  if (inState)  inState.checked = true;
+  if (outState) outState.checked = false;
+
+  // Show in-state selectors, hide manual input
+  const game1Block = document.querySelector('.game-block[data-game-index="1"]');
+  if (game1Block) {
+    game1Block.querySelector('.opponentSelectors')?.classList.remove('hidden');
+    game1Block.querySelector('.opponentManual')?.classList.add('hidden');
+  }
+
+  resetSelectToFirst('opponentDivision-1', { disabled: false, keepFirstOnly: false });
+  resetSelectToFirst('opponentRegion-1',   { disabled: true,  keepFirstOnly: false });
+  resetSelectToFirst('opponentTeam-1',     { disabled: true,  keepFirstOnly: true  });
+
+  const oppManual = document.getElementById('opponentSchoolManual-1');
+  if (oppManual) oppManual.value = '';
+
+  // ---------------------------
+  // 6) Optional UX cleanup
+  // ---------------------------
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  document.getElementById('divisionSelect')?.focus();
+  document.getElementById('gameDate')?.focus();
 }
 
-function resetSelectToPlaceholder(id, { disabled } = {}) {
+/**
+ * Reset a <select> to its first option.
+ * - keepFirstOnly: if true, removes all options after the first (useful for Team selects you dynamically populate)
+ */
+function resetSelectToFirst(id, { disabled, keepFirstOnly } = {}) {
   const sel = document.getElementById(id);
   if (!sel) return;
 
-  // keep the first option (placeholder) if it exists; otherwise just clear
-  if (sel.options.length > 0) {
-    sel.selectedIndex = 0;
-    // if options were dynamically injected, remove everything except option[0]
+  // remove dynamically added options if requested
+  if (keepFirstOnly) {
     while (sel.options.length > 1) sel.remove(1);
-  } else {
-    sel.innerHTML = '';
   }
+
+  // select the placeholder (option 0)
+  sel.selectedIndex = 0;
 
   if (typeof disabled === 'boolean') sel.disabled = disabled;
 }
@@ -1986,5 +2024,6 @@ function resetSelectToPlaceholder(id, { disabled } = {}) {
 
 
 </html>
+
 
 
