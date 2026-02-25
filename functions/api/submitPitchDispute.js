@@ -145,24 +145,25 @@ export async function onRequestPost({ request, env }) {
       return json({ message: "No actual disputes were selected. Nothing recorded." });
     }
 
-    // Append rows
-    const appendRange = `${quoteSheetName(disputesTab)}!A1:append`;
+    const range = `${quoteSheetName(disputesTab)}!A1`; // e.g. 'Disputes'!A1
+
     const appendUrl =
       `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(disputesSheetId)}` +
-      `/values/${encodeURIComponent(appendRange)}?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
-
+      `/values/${encodeURIComponent(range)}:append` +
+      `?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+    
     const resp = await fetch(appendUrl, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({ values: rows })
     });
-
+    
     if (!resp.ok) {
       const t = await resp.text();
-      return json(
-        { ok:false, error:`Sheets API append error (${resp.status})`, details: t },
-        500
-      );
+      return json({ ok:false, error:`Sheets API append error (${resp.status})`, details: t }, 500);
     }
 
     return json({ message: `Dispute recorded for ${school || "(unknown school)"} (VID ${vid}).` });
