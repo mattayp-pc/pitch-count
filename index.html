@@ -1151,14 +1151,94 @@
     popover.classList.remove('hidden');
   }
 
-  function hideOverlayAndPopover() {
-    popover.classList.add('hidden');
-    overlay.classList.add('hidden');
-    baseball.classList.remove('spinning');
-  }
+  // function hideOverlayAndPopover() {
+  //   popover.classList.add('hidden');
+  //   overlay.classList.add('hidden');
+  //   baseball.classList.remove('spinning');
+  // }
 
   // Close button event
-  popoverCloseBtn.addEventListener('click', hideOverlayAndPopover);
+  popoverCloseBtn.addEventListener('click', closeResultAndReset);
+
+  // Call this instead of calling hideOverlayAndPopover() directly
+function closeResultAndReset() {
+  hideOverlayAndPopover();
+  resetForNewSubmission();
+}
+
+// Hook BOTH close controls to the same behavior
+popoverCloseBtn?.addEventListener('click', closeResultAndReset);
+
+// If you have an OK button in the popover:
+document.getElementById('popover-ok')?.addEventListener('click', closeResultAndReset);
+
+// Optional: ESC key closes + resets too
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !overlay.classList.contains('hidden')) {
+    closeResultAndReset();
+  }
+});
+
+function resetForNewSubmission() {
+  // --- 1) Clear any in-memory state your page uses ---
+  if (typeof submittingTeamMeta !== 'undefined') submittingTeamMeta = null;
+  if (typeof submittingTeamRoster !== 'undefined') submittingTeamRoster = [];
+  if (typeof CURRENT_PLAYERS !== 'undefined') CURRENT_PLAYERS = [];
+
+  // --- 2) Reset overlay/popover text back to defaults (optional but nice) ---
+  const overlayTextEl = overlay?.querySelector('.overlay-text');
+  if (overlayTextEl) overlayTextEl.textContent = 'Submitting…';
+  document.getElementById('popover-title') && (document.getElementById('popover-title').textContent = '');
+  document.getElementById('popover-message') && (document.getElementById('popover-message').textContent = '');
+
+  // --- 3) Reset the form (fast way to clear inputs) ---
+  // If you have a specific form id, use it here:
+  const form = document.querySelector('form'); // or document.getElementById('pitchForm')
+  form?.reset();
+
+  // --- 4) Reset your dependent dropdowns to "fresh" state ---
+  resetSelectToPlaceholder('divisionSelect', { disabled: false });
+  resetSelectToPlaceholder('regionSelect',   { disabled: true  });
+  resetSelectToPlaceholder('teamSelect',     { disabled: true  });
+
+  // --- 5) Remove any dynamically added game blocks (keep just the template) ---
+  // If your template is inside gamesContainer, this keeps the template and removes rendered blocks
+  if (typeof gamesContainer !== 'undefined' && gamesContainer) {
+    gamesContainer.querySelectorAll('.game-block').forEach(el => el.remove());
+  }
+
+  // If you always want 1 fresh game block present after reset, call your builder here:
+  // addGameBlock?.();  // <-- uncomment if you have this function
+
+  // --- 6) Clear validation styling/messages (adjust class names to yours) ---
+  document.querySelectorAll('.invalid, .error').forEach(el => el.classList.remove('invalid', 'error'));
+
+  // --- 7) If you store drafts in localStorage, clear them here ---
+  // (Add your real keys if/when you use them)
+  // ['pitchCountDraft', 'pitchCountFormState'].forEach(k => localStorage.removeItem(k));
+
+  // --- 8) UX: scroll to top and focus first control ---
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.getElementById('divisionSelect')?.focus();
+}
+
+function resetSelectToPlaceholder(id, { disabled } = {}) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+
+  // keep the first option (placeholder) if it exists; otherwise just clear
+  if (sel.options.length > 0) {
+    sel.selectedIndex = 0;
+    // if options were dynamically injected, remove everything except option[0]
+    while (sel.options.length > 1) sel.remove(1);
+  } else {
+    sel.innerHTML = '';
+  }
+
+  if (typeof disabled === 'boolean') sel.disabled = disabled;
+}
+
+    
 
     function setGameCount(count) {
       const blocks = gamesContainer.querySelectorAll(".game-block");
@@ -1906,3 +1986,4 @@
 
 
 </html>
+
