@@ -2196,9 +2196,12 @@ function resetSelectToFirst(id, { disabled, keepFirstOnly } = {}) {
       const pitchers = pitcherRows.map(row => {
         const player = row.querySelector('.player-select')?.value || '';
         const pitches = row.querySelector('.number-input')?.value || '';
+        const playerData = CURRENT_PLAYERS.find(p => p.name === player);
+        const jerseyNumber = playerData !== undefined ? playerData.number : null;
 
         return {
           playerId: player,
+          jerseyNumber: jerseyNumber,
           pitches: pitches === '' ? '' : Number(pitches)
         };
       }).filter(p => p.playerId && p.pitches !== '');
