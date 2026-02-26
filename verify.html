@@ -4,37 +4,226 @@
   <meta charset="utf-8" />
   <title>Pitch Count Verification</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 24px; }
-    .card { max-width: 640px; margin: 0 auto; padding: 18px; border: 1px solid #ddd; border-radius: 12px; }
+    :root {
+      --accent: #0f766e;
+      --accent-2: #2563eb;
+      --muted: #6b7280;
+      --card: #ffffff;
+      --bg: #f7f7fb;
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color: #1f2937;
+      background: url(https://d2o2figo6ddd0g.cloudfront.net/n/s/bp91ord6e5kl8/page_bg.jpg) repeat-x left top #000001;
+      padding: 24px 10px 50px;
+    }
+    .card {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 24px 28px;
+      background: var(--card);
+      border: 1px solid #e5e7eb;
+      border-radius: var(--radius);
+      box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+    }
+    h2 { margin: 0 0 8px; color: var(--accent); }
+    .intro { margin: 0 0 20px; font-size: 1rem; line-height: 1.5; }
+    .details-heading {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin: 0 0 10px;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 6px;
+    }
+    .dispute-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .dispute-table thead th {
+      text-align: left;
+      padding: 6px 10px;
+      font-weight: 600;
+      color: var(--muted);
+      border-bottom: 2px solid #e5e7eb;
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .dispute-table tbody tr {
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .dispute-table tbody tr:last-child { border-bottom: none; }
+    .dispute-table td {
+      padding: 8px 10px;
+      vertical-align: top;
+    }
+    .arrow { color: var(--muted); padding: 0 4px; }
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-top: 4px;
+      font-weight: 500;
+    }
+    .tag-count    { background: #dbeafe; color: #1d4ed8; }
+    .tag-pitcher  { background: #fef9c3; color: #92400e; }
+    .tag-both     { background: #fce7f3; color: #9d174d; }
+    .tag-missing  { background: #dcfce7; color: #166534; }
+    .strikethrough { text-decoration: line-through; color: var(--muted); }
+    .new-val { font-weight: 600; }
+    .no-disputes {
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-style: italic;
+      padding: 8px 0;
+    }
+    .note-text {
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-style: italic;
+      margin-top: 2px;
+    }
   </style>
 </head>
 <body>
   <div class="card">
     <h2 id="title">Recording your verification…</h2>
-    <p id="msg">Please wait.</p>
+    <p id="msg" class="intro">Please wait.</p>
+    <div id="disputeSummarySection" style="display:none;">
+      <div class="details-heading">Details</div>
+      <table class="dispute-table">
+        <thead>
+          <tr>
+            <th>Submitted</th>
+            <th></th>
+            <th>Disputed Change</th>
+            <th>Type</th>
+          </tr>
+        </thead>
+        <tbody id="summaryTableBody"></tbody>
+      </table>
+    </div>
   </div>
 
   <script>
     const qs = new URLSearchParams(location.search);
-    const vid = qs.get("vid") || "";
-    const coachName = qs.get("coachName") || "";
-    const coachEmail = qs.get("coachEmail") || "";
+    const fromDispute = qs.get('from') === 'dispute';
+    const vid        = qs.get('vid')        || '';
+    const coachName  = qs.get('coachName')  || '';
+    const coachEmail = qs.get('coachEmail') || '';
 
-    if (!vid) {
-      document.getElementById("title").textContent = "Missing verification id";
-      document.getElementById("msg").textContent = "This link is missing a VID.";
+    function fmt(name, count) {
+      const c = (count !== null && count !== undefined) ? count + ' pitches' : '';
+      return name && c ? name + ': ' + c : (name || c || '—');
+    }
+
+    function typeTag(type) {
+      const map = {
+        count:   { cls: 'tag-count',   label: 'disputed pitch count' },
+        pitcher: { cls: 'tag-pitcher', label: 'disputed pitcher' },
+        both:    { cls: 'tag-both',    label: 'disputed pitcher and pitch count' },
+        missing: { cls: 'tag-missing', label: 'disputed missing pitcher' }
+      };
+      const t = map[type] || { cls: '', label: type };
+      return '<span class="tag ' + t.cls + '">' + t.label + '</span>';
+    }
+
+    function addRow(tbody, origCell, arrowCell, newCell, tagHtml, noteText) {
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + origCell + '</td>' +
+        '<td class="arrow">' + arrowCell + '</td>' +
+        '<td>' + newCell + (noteText ? '<div class="note-text">' + noteText + '</div>' : '') + '</td>' +
+        '<td>' + tagHtml + '</td>';
+      tbody.appendChild(tr);
+    }
+
+    if (fromDispute) {
+      // ---- Dispute confirmation flow ----
+      let summary = null;
+      try {
+        const raw = sessionStorage.getItem('disputeSummary');
+        if (raw) summary = JSON.parse(raw);
+        sessionStorage.removeItem('disputeSummary');
+      } catch (e) {}
+
+      if (summary) {
+        const matchup = summary.matchup || 'Unknown matchup';
+        const date    = summary.date    || '';
+        const dateStr = date ? ' on ' + date : '';
+
+        document.getElementById('title').textContent = 'Thank you.';
+        document.getElementById('msg').textContent =
+          'Your dispute has been recorded for your game vs. ' + matchup + dateStr + '.';
+
+        const tbody = document.getElementById('summaryTableBody');
+        const section = document.getElementById('disputeSummarySection');
+
+        const activeDisputes  = Array.isArray(summary.disputes)       ? summary.disputes       : [];
+        const missingPitchers = Array.isArray(summary.missingPitchers) ? summary.missingPitchers : [];
+
+        if (activeDisputes.length === 0 && missingPitchers.length === 0) {
+          const row = document.createElement('tr');
+          row.innerHTML = '<td colspan="4" class="no-disputes">No active disputes were recorded.</td>';
+          tbody.appendChild(row);
+        } else {
+          // Disputed existing pitchers
+          activeDisputes.forEach(function (d) {
+            const origName  = d.name            || '—';
+            const origCount = d.recordedPitchCount;
+            const origCell  = '<span class="strikethrough">' + fmt(origName, origCount) + '</span>';
+
+            let newName  = d.proposedPitcher  || origName;
+            let newCount = (d.proposedPitchCount !== null && d.proposedPitchCount !== undefined)
+                           ? d.proposedPitchCount
+                           : origCount;
+            const newCell = '<span class="new-val">' + fmt(newName, newCount) + '</span>';
+
+            addRow(tbody, origCell, '→', newCell, typeTag(d.disputeType), d.note || '');
+          });
+
+          // Missing pitchers
+          missingPitchers.forEach(function (m) {
+            const newCell = '<span class="new-val">' + fmt(m.name, m.pitchCount) + '</span>';
+            addRow(tbody, '', '→', newCell, typeTag('missing'), m.note || '');
+          });
+        }
+
+        section.style.display = 'block';
+      } else {
+        document.getElementById('title').textContent = 'Dispute Submitted';
+        document.getElementById('msg').textContent =
+          'Your dispute has been recorded. Thank you.';
+      }
+
     } else {
-      fetch(`/api/verifyPitchCounts?vid=${encodeURIComponent(vid)}&coachName=${encodeURIComponent(coachName)}&coachEmail=${encodeURIComponent(coachEmail)}`)
-        .then(r => r.json().then(j => ({ ok: r.ok, j })))
-        .then(({ ok, j }) => {
-          if (!ok) throw new Error(j?.error || j?.details || "Verification failed");
-          document.getElementById("title").textContent = "Thank you!";
-          document.getElementById("msg").textContent = j?.message || "Your verification has been recorded.";
-        })
-        .catch(err => {
-          document.getElementById("title").textContent = "Verification error";
-          document.getElementById("msg").textContent = err.message || "Could not record verification.";
-        });
+      // ---- Normal verification flow ----
+      if (!vid) {
+        document.getElementById('title').textContent = 'Missing verification id';
+        document.getElementById('msg').textContent = 'This link is missing a VID.';
+      } else {
+        fetch('/api/verifyPitchCounts?vid=' + encodeURIComponent(vid) +
+              '&coachName=' + encodeURIComponent(coachName) +
+              '&coachEmail=' + encodeURIComponent(coachEmail))
+          .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+          .then(function (res) {
+            if (!res.ok) throw new Error(res.j?.error || res.j?.details || 'Verification failed');
+            document.getElementById('title').textContent = 'Thank you!';
+            document.getElementById('msg').textContent = res.j?.message || 'Your verification has been recorded.';
+          })
+          .catch(function (err) {
+            document.getElementById('title').textContent = 'Verification error';
+            document.getElementById('msg').textContent = err.message || 'Could not record verification.';
+          });
+      }
     }
   </script>
 </body>
