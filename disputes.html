@@ -1116,11 +1116,30 @@
           .then((resp) => {
             btn.disabled = false;
 
-            const message = resp?.message || "Dispute submitted successfully. Thank you.";
-            showResultPopover("Dispute Submitted", message);
+            // Build summary for the confirmation page
+            const activeDisputes = disputes.filter(d => d.disputeType !== 'none');
+            const summaryData = {
+              matchup: DISPUTE_CONTEXT
+                ? (DISPUTE_CONTEXT.matchup ||
+                    ((DISPUTE_CONTEXT.homeTeamDisplay && DISPUTE_CONTEXT.awayTeamDisplay)
+                      ? DISPUTE_CONTEXT.homeTeamDisplay + ' vs ' + DISPUTE_CONTEXT.awayTeamDisplay
+                      : 'Unknown matchup'))
+                : 'Unknown matchup',
+              date: DISPUTE_CONTEXT
+                ? (DISPUTE_CONTEXT.dateDisplay || DISPUTE_CONTEXT.date || '')
+                : '',
+              disputes: activeDisputes,
+              missingPitchers: missingEntries
+            };
+            sessionStorage.setItem('disputeSummary', JSON.stringify(summaryData));
 
-            status.textContent = message;
-            status.className = "note ok";
+            const params = new URLSearchParams({
+              from: 'dispute',
+              vid: VID,
+              coachName: COACH_NAME,
+              coachEmail: COACH_EMAIL
+            });
+            window.location.href = 'verify.html?' + params.toString();
           })
           .catch((err) => {
             console.error(err);
