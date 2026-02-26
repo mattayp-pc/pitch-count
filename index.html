@@ -1945,10 +1945,17 @@ function resetSelectToFirst(id, { disabled, keepFirstOnly } = {}) {
   }
 
   // show an inline error message above the submit button and optionally highlight an element
+  // accept either a string or an array of strings; format numbered list when array
   function showInlineError(message, el) {
     const statusEl = document.getElementById('statusMessage');
     if (statusEl) {
-      statusEl.textContent = message;
+      if (Array.isArray(message)) {
+        // build numbered list
+        const lines = message.map((m, i) => `${i+1}. ${m}`);
+        statusEl.innerHTML = lines.join('<br>');
+      } else {
+        statusEl.textContent = message;
+      }
       statusEl.className = 'note err';
     }
     if (el) {
@@ -1981,37 +1988,54 @@ function resetSelectToFirst(id, { disabled, keepFirstOnly } = {}) {
     const gameBlocks = Array.from(document.getElementById('gamesContainer').querySelectorAll('.game-block'));
     gameBlocks.forEach(block => {
       const idx = block.dataset.gameIndex;
+
       if (idx === '1') {
+        const divEl = document.getElementById('submittingDivision-1');
+        const regEl = document.getElementById('submittingRegion-1');
         const teamEl = document.getElementById('submittingTeam-1');
-        if (!teamEl || !teamEl.value) {
-          issues.push({ message: 'Please select your submitting team for Game 1.', el: teamEl || block.querySelector('.submitting-panel') });
+
+        if (!divEl || !divEl.value) {
+          issues.push({ message: 'Please select a division for your submitting team (Game 1).', el: divEl });
+        }
+        if (divEl && divEl.value && (!regEl || !regEl.value)) {
+          issues.push({ message: 'Please select a region for your submitting team (Game 1).', el: regEl });
+        }
+        if (regEl && regEl.value && (!teamEl || !teamEl.value)) {
+          issues.push({ message: 'Please select your submitting team for Game 1.', el: teamEl });
         }
       }
-      // pitchers: need at least one valid
-      const pitchersContainer = block.querySelector('.pitchersContainer');
-      if (pitchersContainer) {
-        const pitcherRows = Array.from(pitchersContainer.querySelectorAll('.pitcher-row'));
-        let hasValid = false;
-        pitcherRows.forEach(row => {
-          const player = row.querySelector('.player-select')?.value || '';
-          const countInput = row.querySelector('.number-input');
-          const pitches = countInput ? countInput.value : '';
-          const numeric = pitches !== '' && !isNaN(pitches) && Number(pitches) >= 0;
-          if (player && numeric) {
-            hasValid = true;
-          }
-          // identify missing pieces on this row
-          if (player && !numeric) {
-            issues.push({ message: `Pitch count must be a number ≥ 0 for player in game ${idx}.`, el: countInput });
-          }
-          if (!player && pitches !== '') {
-            issues.push({ message: `Please select a player for the entered pitch count in game ${idx}.`, el: row.querySelector('.player-select') });
-          }
-        });
-        if (!hasValid) {
-          // if there were no complete rows and no row-specific errors, flag container
-          if (!issues.some(i => i.el && pitchersContainer.contains(i.el))) {
-            issues.push({ message: `Please select at least one pitcher and enter their pitch count for game ${idx}.`, el: pitchersContainer });
+
+      // only validate pitchers if the submitting team is chosen (game1) or always for additional games
+      const teamVal = idx === '1'
+        ? document.getElementById('submittingTeam-1')?.value || ''
+        : (submittingTeamMeta ? submittingTeamMeta.teamValue || '' : '');
+
+      if (teamVal) {
+        const pitchersContainer = block.querySelector('.pitchersContainer');
+        if (pitchersContainer) {
+          const pitcherRows = Array.from(pitchersContainer.querySelectorAll('.pitcher-row'));
+          let hasValid = false;
+          pitcherRows.forEach(row => {
+            const player = row.querySelector('.player-select')?.value || '';
+            const countInput = row.querySelector('.number-input');
+            const pitches = countInput ? countInput.value : '';
+            const numeric = pitches !== '' && !isNaN(pitches) && Number(pitches) >= 0;
+            if (player && numeric) {
+              hasValid = true;
+            }
+            // identify missing pieces on this row
+            if (player && !numeric) {
+              issues.push({ message: `Pitch count must be a number ≥ 0 for player in game ${idx}.`, el: countInput });
+            }
+            if (!player && pitches !== '') {
+              issues.push({ message: `Please select a player for the entered pitch count in game ${idx}.`, el: row.querySelector('.player-select') });
+            }
+          });
+          if (!hasValid) {
+            // if there were no complete rows and no row-specific errors, flag container
+            if (!issues.some(i => i.el && pitchersContainer.contains(i.el))) {
+              issues.push({ message: `Please select at least one pitcher and enter their pitch count for game ${idx}.`, el: pitchersContainer });
+            }
           }
         }
       }
@@ -2070,7 +2094,7 @@ function resetSelectToFirst(id, { disabled, keepFirstOnly } = {}) {
         }
       });
       if (messages.length) {
-        showInlineError(messages.join(' '));
+        showInlineError(messages);
       }
       if (firstEl && typeof firstEl.scrollIntoView === 'function') {
         firstEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2080,8 +2104,9 @@ function resetSelectToFirst(id, { disabled, keepFirstOnly } = {}) {
 
     showOverlay();
 
-    // reuse the date we already validated above
-    // (gameDate variable defined earlier in this function)
+    // read values needed for payload
+    const gameDate = document.getElementById('gameDate')?.value || '';
+    const coachRole = document.querySelector('input[name="coachRole"]:checked')?.value || '';
     const gameType = document.querySelector('input[name="gameType"]:checked')?.value || 'single_game';
 
     const gamesContainer = document.getElementById('gamesContainer');
