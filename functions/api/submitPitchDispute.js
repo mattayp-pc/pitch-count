@@ -4,7 +4,7 @@ export async function onRequestPost({ request, env }) {
     if (!payload) return json({ error: "No dispute payload received." }, 400);
 
     if (!env.DISPUTES_SHEET_ID) return json({ error: "Missing DISPUTES_SHEET_ID." }, 500);
-    if (!env.COACH_EMAIL_SHEET_ID) return json({ error: "Missing COACH_EMAIL_SHEET_ID." }, 500);
+    if (!env.DISPUTES_SHEET_ID) return json({ error: "Missing DISPUTES_SHEET_ID." }, 500);
 
     const token = await getGoogleAccessToken(env);
 
@@ -74,10 +74,10 @@ export async function onRequestPost({ request, env }) {
 
     // Lookup coach contacts
     const disputingCoachInfo = await getCoachContactForSchool_({
-      token, spreadsheetId: env.COACH_EMAIL_SHEET_ID, tabName: env.COACH_EMAIL_SHEET_NAME || "Home", schoolValue: school
+      token, spreadsheetId: env.DISPUTES_SHEET_ID, tabName: env.COACH_EMAIL_SHEET_NAME || "Home", schoolValue: school
     });
     const recordedCoachInfo = await getCoachContactForSchool_({
-      token, spreadsheetId: env.COACH_EMAIL_SHEET_ID, tabName: env.COACH_EMAIL_SHEET_NAME || "Home", schoolValue: recordedSchoolValue
+      token, spreadsheetId: env.DISPUTES_SHEET_ID, tabName: env.COACH_EMAIL_SHEET_NAME || "Home", schoolValue: recordedSchoolValue
     });
 
     const disputingCoachName  = coachName  || disputingCoachInfo.name;
