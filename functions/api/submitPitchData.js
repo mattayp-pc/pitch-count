@@ -32,7 +32,8 @@ export async function onRequestPost({ request, env }) {
       const perGamePitchers = pitchers
         .map(p => ({
           name: String(p?.player || p?.playerId || '').trim().replace(/\s+/g, ' '),
-          count: (p?.pitch_count ?? p?.pitches)
+          count: (p?.pitch_count ?? p?.pitches),
+          jerseyNumber: (p?.jerseyNumber !== null && p?.jerseyNumber !== undefined) ? p.jerseyNumber : null
         }))
         .filter(p => p.name && p.count !== '' && p.count !== null && !Number.isNaN(Number(p.count)));
 
@@ -64,7 +65,8 @@ export async function onRequestPost({ request, env }) {
           coachRole,
           opponentPitchers: perGamePitchers.map(x => ({
             name: x.name,
-            pitchCount: Number(x.count)
+            pitchCount: Number(x.count),
+            jerseyNumber: x.jerseyNumber
           }))
         });
       }
@@ -141,7 +143,18 @@ export async function onRequestPost({ request, env }) {
             coachRole: job.coachRole,
             coachName: coach.name || "",
             coachEmail: coach.email || "",
-            siteBaseUrl: siteBaseUrl
+            siteBaseUrl: siteBaseUrl,
+            htmlBody: buildEmailHtml({
+              submittingSchool: job.submittingSchool,
+              opponentSchool: job.opponentSchool,
+              formattedDate: job.formattedDate,
+              coachRole: job.coachRole,
+              coachName: coach.name || "",
+              coachEmail: coach.email || "",
+              opponentPitchers: job.opponentPitchers,
+              siteBaseUrl,
+              verificationId: job.verificationId
+            })
           })
         });
       
@@ -169,6 +182,89 @@ export async function onRequestPost({ request, env }) {
 }
 
 /* ================= helpers ================= */
+
+function buildEmailHtml({ submittingSchool, opponentSchool, formattedDate, coachRole, coachName, coachEmail, opponentPitchers, siteBaseUrl, verificationId }) {
+  const submittingDisplay = submittingSchool.replace(/_/g, ' ');
+  const opponentDisplay   = opponentSchool.replace(/_/g, ' ');
+  const level  = coachRole === 'JV' ? 'JV' : 'Varsity';
+  const total  = opponentPitchers.reduce((s, p) => s + p.pitchCount, 0);
+  const greeting = coachName ? `Dear Coach ${coachName},` : 'Dear Coach,';
+
+  const base = siteBaseUrl.replace(/\/$/, '');
+  const verifyUrl  = `${base}/verify.html?vid=${encodeURIComponent(verificationId)}&coachName=${encodeURIComponent(coachName)}&coachEmail=${encodeURIComponent(coachEmail)}`;
+  const disputeUrl = `${base}/disputes.html?vid=${encodeURIComponent(verificationId)}&school=${encodeURIComponent(opponentSchool)}&coachName=${encodeURIComponent(coachName)}&coachEmail=${encodeURIComponent(coachEmail)}`;
+
+  const rows = opponentPitchers.map((p, i) => {
+    const bg = i % 2 === 0 ? '#ffffff' : '#f9fafb';
+    const jersey = (p.jerseyNumber !== null && p.jerseyNumber !== undefined && String(p.jerseyNumber).trim() !== '')
+      ? String(p.jerseyNumber)
+      : '&mdash;';
+    return `<tr style="background:${bg};">
+      <td style="padding:10px 14px;text-align:center;color:#6b7280;font-size:13px;width:52px;">${jersey}</td>
+      <td style="padding:10px 14px;color:#1f2937;font-size:14px;">${p.name}</td>
+      <td style="padding:10px 14px;text-align:center;font-weight:600;color:#1f2937;font-size:14px;width:80px;">${p.pitchCount}</td>
+    </tr>`;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 0;">
+  <tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+
+      <!-- Header -->
+      <tr><td style="background:#0f766e;padding:20px 28px;border-radius:12px 12px 0 0;">
+        <p style="margin:0;color:rgba(255,255,255,0.7);font-size:11px;text-transform:uppercase;letter-spacing:0.09em;">NIAA Baseball &bull; Pitch Count System</p>
+        <h1 style="margin:6px 0 0;color:#ffffff;font-size:20px;font-weight:700;line-height:1.2;">Pitch Count Notification</h1>
+      </td></tr>
+
+      <!-- Body -->
+      <tr><td style="background:#ffffff;padding:24px 28px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;">
+        <p style="margin:0 0 14px;font-size:15px;color:#1f2937;">${greeting}</p>
+        <p style="margin:0 0 22px;font-size:14px;color:#374151;line-height:1.65;">
+          <strong>${submittingDisplay}</strong> has submitted the following <strong>${level}</strong> pitch counts
+          from their game against <strong>${opponentDisplay}</strong> on <strong>${formattedDate}</strong>.
+          Please review and verify or dispute within 24 hours.
+        </p>
+
+        <!-- Pitcher table -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:26px;">
+          <thead>
+            <tr style="background:#f3f4f6;">
+              <th style="padding:10px 14px;text-align:center;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.07em;border-bottom:2px solid #0f766e;width:52px;">#</th>
+              <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.07em;border-bottom:2px solid #0f766e;">Pitcher</th>
+              <th style="padding:10px 14px;text-align:center;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.07em;border-bottom:2px solid #0f766e;width:80px;">Pitches</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+          <tfoot>
+            <tr style="background:#f9fafb;">
+              <td colspan="2" style="padding:10px 14px;text-align:right;font-size:13px;font-weight:700;color:#374151;border-top:2px solid #e5e7eb;">Total</td>
+              <td style="padding:10px 14px;text-align:center;font-size:15px;font-weight:700;color:#0f766e;border-top:2px solid #e5e7eb;">${total}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- Action buttons -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:26px;">
+          <tr><td align="center">
+            <a href="${verifyUrl}" style="display:inline-block;background:#0f766e;color:#ffffff;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;margin:0 5px;">&#10003; Verify Pitch Counts</a>
+            <a href="${disputeUrl}" style="display:inline-block;background:#dc2626;color:#ffffff;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;margin:0 5px;">&#10005; Dispute</a>
+          </td></tr>
+        </table>
+
+        <p style="margin:0;font-size:11px;color:#9ca3af;text-align:center;line-height:1.6;">
+          NIAA Baseball &bull; Pitch Count Management System<br>
+          If you have questions, please contact the league director.
+        </p>
+      </td></tr>
+
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+}
 
 function json(obj, status=200) {
   return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type':'application/json' } });
