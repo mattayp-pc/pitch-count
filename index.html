@@ -570,6 +570,12 @@
   #statusMessage.err { color: #b91c1c; }
   #statusMessage.info { color: var(--muted); }
 
+  /* generic error highlight for inputs */
+  .field-error {
+    outline: 2px solid #b91c1c;
+    outline-offset: 2px;
+  }
+
   .loading-text {
     font-size: 0.9rem;
     color: var(--muted);
@@ -983,6 +989,8 @@
         <div style="text-align:center; margin-top:15px;">
           <button id="submitButton" class="submit-btn" type="button">Submit</button>
         </div>
+        <!-- inline validation/status message -->
+        <div id="statusMessage" class="note info"></div>
       </div>
     </div>
   </div>
@@ -1295,6 +1303,15 @@ function resetForNewSubmission() {
   // ---------------------------
   window.scrollTo({ top: 0, behavior: 'smooth' });
   document.getElementById('gameDate')?.focus();
+
+  // clear any inline status message as part of reset
+  const statusEl = document.getElementById('statusMessage');
+  if (statusEl) {
+    statusEl.textContent = '';
+    statusEl.className = 'note info';
+  }
+  // remove any red outlines left on inputs
+  document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
 }
 
 /**
@@ -1853,7 +1870,25 @@ function resetSelectToFirst(id, { disabled, keepFirstOnly } = {}) {
     document.querySelectorAll('input[name="coachRole"]').forEach(radio => {
       radio.addEventListener('change', () => {
         coachFieldset?.classList.remove('coach-role-error');
+        const statusEl = document.getElementById('statusMessage');
+        if (statusEl) {
+          statusEl.textContent = '';
+          statusEl.className = 'note info';
+        }
       });
+    });
+  });
+
+  // clear inline message / red outline when date is modified
+  document.addEventListener('DOMContentLoaded', () => {
+    const dateInput = document.getElementById('gameDate');
+    dateInput?.addEventListener('change', () => {
+      dateInput.classList.remove('field-error');
+      const statusEl = document.getElementById('statusMessage');
+      if (statusEl) {
+        statusEl.textContent = '';
+        statusEl.className = 'note info';
+      }
     });
   });
 
@@ -1867,30 +1902,82 @@ function resetSelectToFirst(id, { disabled, keepFirstOnly } = {}) {
     btn.classList.toggle('disabled', !coachRole); // only if you have styles for this
   }
 
-  function handleSubmit() {
-    // --- REQUIRED: coach role must be selected ---
+  // Validate that each game has a proper opponent entry.
+  // Returns a string message if there’s a problem, otherwise null.
+  function validateOpponents() {
+    const blocks = Array.from(document.getElementById('gamesContainer').querySelectorAll('.game-block'));
+    for (const block of blocks) {
+      const idx = block.dataset.gameIndex;
+      const locationVal = block.querySelector(`input[name="opponentLocation-${idx}"]:checked`)?.value || 'in-state';
+      if (locationVal === 'in-state') {
+        const teamEl = document.getElementById(`opponentTeam-${idx}`);
+        if (!teamEl || !teamEl.value) {
+          if (teamEl) teamEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return `Please select an opponent team for game ${idx}.`;
+        }
+      } else {
+        const manualInput = document.getElementById(`opponentSchoolManual-${idx}`);
+        if (!manualInput || !manualInput.value.trim()) {
+          if (manualInput) manualInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return `Please enter the opponent school name for game ${idx}.`;
+        }
+      }
+    }
+    return null;
+  }
 
-    // Find the fieldset that contains the coachRole radios (no HTML changes needed)
+  function handleSubmit() {
+    // clear any previous inline message
+    const statusEl = document.getElementById('statusMessage');
+    if (statusEl) {
+      statusEl.textContent = '';
+      statusEl.className = 'note info';
+    }
+
+    // reset any field highlights
+    document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
     const coachFieldset = document
       .querySelector('input[name="coachRole"]')
       ?.closest('fieldset');
-
-    // Clear old error state every submit attempt
     coachFieldset?.classList.remove('coach-role-error');
 
     const coachRole = document.querySelector('input[name="coachRole"]:checked')?.value || '';
     if (!coachRole) {
       coachFieldset?.classList.add('coach-role-error');
       coachFieldset?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (statusEl) {
+        statusEl.textContent = 'Please select whether you are the Head Varsity or Head JV coach.';
+        statusEl.className = 'note err';
+      }
+      return;
+    }
 
-      // Use your UI messaging (or alert)
-      showSubmissionResult?.('error', 'Please select whether you are the Head Varsity or Head JV coach.');
+    // date is required too
+    const gameDateInput = document.getElementById('gameDate');
+    const gameDate = gameDateInput?.value || '';
+    if (!gameDate) {
+      if (gameDateInput) {
+        gameDateInput.classList.add('field-error');
+        gameDateInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      if (statusEl) {
+        statusEl.textContent = 'Please select the game date.';
+        statusEl.className = 'note err';
+      }
+      return;
+    }
+
+    // make sure opponents are valid before we start the spinner
+    const opponentError = validateOpponents();
+    if (opponentError) {
+      showSubmissionResult?.('error', opponentError);
       return;
     }
 
     showOverlay();
 
-    const gameDate = document.getElementById('gameDate')?.value || '';
+    // reuse the date we already validated above
+    // (gameDate variable defined earlier in this function)
     const gameType = document.querySelector('input[name="gameType"]:checked')?.value || 'single_game';
 
     const gamesContainer = document.getElementById('gamesContainer');
