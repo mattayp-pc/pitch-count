@@ -217,7 +217,12 @@
           .then(function (res) {
             if (!res.ok) throw new Error(res.j?.error || res.j?.details || 'Verification failed');
             document.getElementById('title').textContent = 'Thank you!';
-            document.getElementById('msg').textContent = res.j?.message || 'Your verification has been recorded.';
+            var opponent = (res.j?.opponentDisplay || '').replace(/_/g, ' ');
+            var date     = res.j?.dateDisplay || '';
+            var msg = 'Verification recorded for your game vs. ' + (opponent || 'your opponent');
+            if (date) msg += ' on ' + date;
+            msg += '.';
+            document.getElementById('msg').textContent = msg;
           })
           .catch(function (err) {
             document.getElementById('title').textContent = 'Verification error';
