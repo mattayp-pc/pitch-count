@@ -109,7 +109,7 @@ export async function onRequestPost({ request, env }) {
     const relayUrl = env.EMAIL_RELAY_URL;
     const relayKey = env.EMAIL_RELAY_KEY;
     const siteBaseUrl = env.SITE_BASE_URL; // e.g. https://pitch-count.pages.dev or custom domain
-    const coachSheetId = env.COACH_EMAIL_SHEET_ID;
+    const coachSheetId = env.DISPUTES_SHEET_ID;
     const coachSheetName = env.COACH_EMAIL_SHEET_NAME || 'Home';
 
     let emailsAttempted = 0;
