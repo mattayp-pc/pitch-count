@@ -377,6 +377,21 @@
     cursor: pointer;
   }
 
+  /* OK button inside popover */
+  #overlay .popover-ok {
+    margin-top: 8px;
+    padding: 8px 20px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 1rem;
+  }
+  #overlay .popover-ok:hover {
+    background: var(--accent-2);
+  }
+
   /* Baseball spinner */
   .baseball {
     --ball-size: 200px;
@@ -685,6 +700,10 @@
       <button id="popover-close" class="popover-close" type="button">&times;</button>
       <h2 id="popover-title"></h2>
       <p id="popover-message"></p>
+      <!-- OK button will behave the same as the close icon -->
+      <div style="text-align:center; margin-top:16px;">
+        <button id="popover-ok" class="popover-ok" type="button">OK</button>
+      </div>
     </div>
   </div>
 
@@ -1161,6 +1180,9 @@
     }
   
     popover.classList.remove('hidden');
+
+    // focus the OK button so keyboard users can close easily
+    document.getElementById('popover-ok')?.focus();
   }
   
   function hideOverlayAndPopover() {
@@ -1172,32 +1194,25 @@
     popover.dataset.mode = '';
   }
   
-  // Close button: ONLY reset after a successful submission
+  // Close or OK button: ONLY reset after a successful submission
   function handlePopoverClose() {
     const mode = popover?.dataset?.mode || '';
-  
+
     hideOverlayAndPopover();
-  
+
     if (mode === 'success') {
       resetForNewSubmission();
     }
   }
-  
-  // Hook close button ONCE
+
+  // Hook the X icon
   popoverCloseBtn.addEventListener('click', handlePopoverClose);
+  // Hook the OK button too (same behavior)
+  document.getElementById('popover-ok')?.addEventListener('click', handlePopoverClose);
 
-  // Call this instead of calling hideOverlayAndPopover() directly
-// Use this for BOTH the X close and an OK button (if you add one)
-function closeResultAndReset() {
-  hideOverlayAndPopover();   // your existing function
-  resetForNewSubmission();   // new function below
-}
-
-// Hook the X close
-document.getElementById('popover-close')?.addEventListener('click', closeResultAndReset);
+  // remove old helper function that always reset (no longer needed)
 
 // If you add an OK button later, hook it too:
-// document.getElementById('popover-ok')?.addEventListener('click', closeResultAndReset);
 
 function resetForNewSubmission() {
   // ---------------------------
