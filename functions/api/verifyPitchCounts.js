@@ -44,6 +44,20 @@ export async function onRequestGet({ request, env }) {
       }
       if (!matchingRows.length) continue;
 
+      // Read date (col I) and opponent (col J) from the first matching row
+      let dateDisplay = "";
+      let opponentDisplay = "";
+      const firstRow = matchingRows[0];
+      const ijRange = `${quoteSheetName(tabName)}!I${firstRow}:J${firstRow}`;
+      const ijUrl = `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}/values/${encodeURIComponent(ijRange)}?majorDimension=ROWS`;
+      const ijResp = await fetch(ijUrl, { headers: { Authorization: `Bearer ${token}` } });
+      if (ijResp.ok) {
+        const ijData = await ijResp.json();
+        const ijRow = (ijData.values || [])[0] || [];
+        dateDisplay     = String(ijRow[0] ?? "").trim();
+        opponentDisplay = String(ijRow[1] ?? "").trim();
+      }
+
       // Update M:N for each matching row using values:batchUpdate
       const data = matchingRows.map(r => ({
         range: `${quoteSheetName(tabName)}!M${r}:N${r}`,
@@ -65,7 +79,9 @@ export async function onRequestGet({ request, env }) {
       return json({
         message: `Verification recorded. (${tabName})`,
         sheet: tabName,
-        rows: matchingRows.length
+        rows: matchingRows.length,
+        dateDisplay,
+        opponentDisplay
       });
     }
 
