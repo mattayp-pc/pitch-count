@@ -1892,6 +1892,26 @@ function resetSelectToFirst(id, { disabled, keepFirstOnly } = {}) {
     });
   });
 
+  // clear inline message when relevant inputs change
+  document.addEventListener('change', (e) => {
+    const statusEl = document.getElementById('statusMessage');
+    if (!statusEl) return;
+
+    const selectors = [
+      '#submittingTeam-1',
+      '.opponentTeam',
+      '.opponentSchoolManual',
+      '.player-select',
+      '.number-input'
+    ];
+    if (selectors.some(sel => e.target.matches(sel))) {
+      statusEl.textContent = '';
+      statusEl.className = 'note info';
+      document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
+      document.querySelectorAll('.coach-role-error').forEach(el => el.classList.remove('coach-role-error'));
+    }
+  });
+
 
   function updateSubmitEnabled() {
     const btn = document.getElementById("submitButton");
@@ -1903,7 +1923,7 @@ function resetSelectToFirst(id, { disabled, keepFirstOnly } = {}) {
   }
 
   // Validate that each game has a proper opponent entry.
-  // Returns a string message if there’s a problem, otherwise null.
+  // Returns { message, el } if error, otherwise null.
   function validateOpponents() {
     const blocks = Array.from(document.getElementById('gamesContainer').querySelectorAll('.game-block'));
     for (const block of blocks) {
@@ -1912,18 +1932,109 @@ function resetSelectToFirst(id, { disabled, keepFirstOnly } = {}) {
       if (locationVal === 'in-state') {
         const teamEl = document.getElementById(`opponentTeam-${idx}`);
         if (!teamEl || !teamEl.value) {
-          if (teamEl) teamEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          return `Please select an opponent team for game ${idx}.`;
+          return { message: `Please select an opponent team for game ${idx}.`, el: teamEl || block.querySelector('.opponentSelectors') };
         }
       } else {
         const manualInput = document.getElementById(`opponentSchoolManual-${idx}`);
         if (!manualInput || !manualInput.value.trim()) {
-          if (manualInput) manualInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          return `Please enter the opponent school name for game ${idx}.`;
+          return { message: `Please enter the opponent school name for game ${idx}.`, el: manualInput || block.querySelector('.opponentManual') };
         }
       }
     }
     return null;
+  }
+
+  // show an inline error message above the submit button and optionally highlight an element
+  function showInlineError(message, el) {
+    const statusEl = document.getElementById('statusMessage');
+    if (statusEl) {
+      statusEl.textContent = message;
+      statusEl.className = 'note err';
+    }
+    if (el) {
+      try { el.classList.add('field-error'); } catch (e) {}
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  // gathers all validation issues across the form, returning array of {message, el}
+  function gatherValidationIssues() {
+    const issues = [];
+
+    // game date
+    const gameDateInput = document.getElementById('gameDate');
+    const gameDate = gameDateInput?.value || '';
+    if (!gameDate) {
+      issues.push({ message: 'Please select the game date.', el: gameDateInput });
+    }
+
+    // coach role
+    const coachFieldset = document
+      .querySelector('input[name="coachRole"]')
+      ?.closest('fieldset');
+    const coachRole = document.querySelector('input[name="coachRole"]:checked')?.value || '';
+    if (!coachRole) {
+      issues.push({ message: 'Please select whether you are the Head Varsity or Head JV coach.', el: coachFieldset });
+    }
+
+    // submitting team & pitchers per game
+    const gameBlocks = Array.from(document.getElementById('gamesContainer').querySelectorAll('.game-block'));
+    gameBlocks.forEach(block => {
+      const idx = block.dataset.gameIndex;
+      if (idx === '1') {
+        const teamEl = document.getElementById('submittingTeam-1');
+        if (!teamEl || !teamEl.value) {
+          issues.push({ message: 'Please select your submitting team for Game 1.', el: teamEl || block.querySelector('.submitting-panel') });
+        }
+      }
+      // pitchers: need at least one valid
+      const pitchersContainer = block.querySelector('.pitchersContainer');
+      if (pitchersContainer) {
+        const pitcherRows = Array.from(pitchersContainer.querySelectorAll('.pitcher-row'));
+        let hasValid = false;
+        pitcherRows.forEach(row => {
+          const player = row.querySelector('.player-select')?.value || '';
+          const countInput = row.querySelector('.number-input');
+          const pitches = countInput ? countInput.value : '';
+          const numeric = pitches !== '' && !isNaN(pitches) && Number(pitches) >= 0;
+          if (player && numeric) {
+            hasValid = true;
+          }
+          // identify missing pieces on this row
+          if (player && !numeric) {
+            issues.push({ message: `Pitch count must be a number ≥ 0 for player in game ${idx}.`, el: countInput });
+          }
+          if (!player && pitches !== '') {
+            issues.push({ message: `Please select a player for the entered pitch count in game ${idx}.`, el: row.querySelector('.player-select') });
+          }
+        });
+        if (!hasValid) {
+          // if there were no complete rows and no row-specific errors, flag container
+          if (!issues.some(i => i.el && pitchersContainer.contains(i.el))) {
+            issues.push({ message: `Please select at least one pitcher and enter their pitch count for game ${idx}.`, el: pitchersContainer });
+          }
+        }
+      }
+    });
+
+    // opponents
+    gameBlocks.forEach(block => {
+      const idx = block.dataset.gameIndex;
+      const locationVal = block.querySelector(`input[name="opponentLocation-${idx}"]:checked`)?.value || 'in-state';
+      if (locationVal === 'in-state') {
+        const teamEl = document.getElementById(`opponentTeam-${idx}`);
+        if (!teamEl || !teamEl.value) {
+          issues.push({ message: `Please select an opponent team for game ${idx}.`, el: teamEl || block.querySelector('.opponentSelectors') });
+        }
+      } else {
+        const manualInput = document.getElementById(`opponentSchoolManual-${idx}`);
+        if (!manualInput || !manualInput.value.trim()) {
+          issues.push({ message: `Please enter the opponent school name for game ${idx}.`, el: manualInput || block.querySelector('.opponentManual') });
+        }
+      }
+    });
+
+    return issues;
   }
 
   function handleSubmit() {
@@ -1941,36 +2052,29 @@ function resetSelectToFirst(id, { disabled, keepFirstOnly } = {}) {
       ?.closest('fieldset');
     coachFieldset?.classList.remove('coach-role-error');
 
-    const coachRole = document.querySelector('input[name="coachRole"]:checked')?.value || '';
-    if (!coachRole) {
-      coachFieldset?.classList.add('coach-role-error');
-      coachFieldset?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      if (statusEl) {
-        statusEl.textContent = 'Please select whether you are the Head Varsity or Head JV coach.';
-        statusEl.className = 'note err';
+    // run full validation that collects all missing fields (date, coach, team, pitchers, opponents)
+    const issues = gatherValidationIssues();
+    if (issues.length > 0) {
+      // highlight each and collect messages
+      const messages = [];
+      let firstEl = null;
+      issues.forEach(({message, el}) => {
+        if (message) messages.push(message);
+        if (el) {
+          if (!firstEl) firstEl = el;
+          if (el.tagName === 'FIELDSET') {
+            el.classList.add('coach-role-error');
+          } else {
+            el.classList.add('field-error');
+          }
+        }
+      });
+      if (messages.length) {
+        showInlineError(messages.join(' '));
       }
-      return;
-    }
-
-    // date is required too
-    const gameDateInput = document.getElementById('gameDate');
-    const gameDate = gameDateInput?.value || '';
-    if (!gameDate) {
-      if (gameDateInput) {
-        gameDateInput.classList.add('field-error');
-        gameDateInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (firstEl && typeof firstEl.scrollIntoView === 'function') {
+        firstEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-      if (statusEl) {
-        statusEl.textContent = 'Please select the game date.';
-        statusEl.className = 'note err';
-      }
-      return;
-    }
-
-    // make sure opponents are valid before we start the spinner
-    const opponentError = validateOpponents();
-    if (opponentError) {
-      showSubmissionResult?.('error', opponentError);
       return;
     }
 
