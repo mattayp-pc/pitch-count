@@ -1128,37 +1128,63 @@
 
     /* ===== Helpers ===== */
     
-    function showOverlay() {
+  function showOverlay() {
+    // overlay visible + spinner running
     overlay.classList.remove('hidden');
-    popover.classList.add('hidden');       // hide any old message
+    popover.classList.add('hidden');
+  
+    // IMPORTANT: clear mode so close can’t accidentally reset
+    popover.dataset.mode = '';
+  
     overlayText.innerHTML = 'Submitting<br>Please Wait...<br>';
-    baseball.classList.add('spinning');    // start animation
+    baseball.classList.add('spinning');
   }
 
   // type: "success" | "error"
+  // NOTE: this now ALSO makes the overlay visible so it can be used for validation messages too.
   function showSubmissionResult(type, message) {
-    // Keep overlay visible, stop spinner
+    // Make sure overlay is visible (needed for validation errors too)
+    overlay.classList.remove('hidden');
+  
+    // Stop spinner
     baseball.classList.remove('spinning');
-
+  
+    // Tag mode so close button knows whether to reset
+    popover.dataset.mode = type;
+  
     if (type === 'success') {
       popoverTitleEl.textContent = 'Submission Successful';
       popoverMessageEl.textContent = message || 'Your pitch count has been submitted.';
     } else {
-      popoverTitleEl.textContent = 'Submission Error';
-      popoverMessageEl.textContent = message || 'Something went wrong while submitting. Please try again.';
+      popoverTitleEl.textContent = 'Missing / Incorrect Information';
+      popoverMessageEl.textContent = message || 'Please correct the highlighted fields and try again.';
     }
-
+  
     popover.classList.remove('hidden');
   }
-
+  
   function hideOverlayAndPopover() {
     popover.classList.add('hidden');
     overlay.classList.add('hidden');
     baseball.classList.remove('spinning');
+  
+    // Clear mode after hiding (clean slate)
+    popover.dataset.mode = '';
   }
-
-  // Close button event
-  popoverCloseBtn.addEventListener('click', closeResultAndReset);
+  
+  // Close button: ONLY reset after a successful submission
+  function handlePopoverClose() {
+    const mode = popover?.dataset?.mode || '';
+  
+    hideOverlayAndPopover();
+  
+    if (mode === 'success') {
+      resetForNewSubmission();
+    }
+  }
+  
+  // Hook close button ONCE
+  popoverCloseBtn.addEventListener('click', handlePopoverClose);
 
   // Call this instead of calling hideOverlayAndPopover() directly
 // Use this for BOTH the X close and an OK button (if you add one)
@@ -1185,8 +1211,7 @@ function resetForNewSubmission() {
   // 2) Reset top controls
   // ---------------------------
   // date
-  const gameDate = document.getElementById('gameDate');
-  if (gameDate) gameDate.value = '';
+  setDefaultGameDate(true); // force today
 
   // submission type -> Single game (default)
   const singleRadio = document.querySelector('input[name="gameType"][value="single_game"]');
@@ -1412,11 +1437,12 @@ function resetSelectToFirst(id, { disabled, keepFirstOnly } = {}) {
     }
 
     //This function just fills in the current date in the datePicker as a default
-    function setDefaultGameDate() {
+    function setDefaultGameDate(force = false) {
       const input = document.getElementById('gameDate');
       if (!input) return;
-      if (!input.value) {
-        const now = new Date(); // local time (browser handles your TZ)
+    
+      if (force || !input.value) {
+        const now = new Date(); // local time
         const yyyy = now.getFullYear();
         const mm = String(now.getMonth() + 1).padStart(2, '0');
         const dd = String(now.getDate()).padStart(2, '0');
@@ -1792,7 +1818,7 @@ function resetSelectToFirst(id, { disabled, keepFirstOnly } = {}) {
       // Initialize all existing game blocks (at load, that's just Game 1)
       document.querySelectorAll(".game-block").forEach(initGameBlock);
 
-      setDefaultGameDate();
+      setDefaultGameDate(true);
     });
 
 
@@ -2024,6 +2050,7 @@ function resetSelectToFirst(id, { disabled, keepFirstOnly } = {}) {
 
 
 </html>
+
 
 
 
