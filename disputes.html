@@ -674,6 +674,19 @@
         return list; // <-- return objects so we still have .number
       }
 
+      // Returns "[number] name" if a jersey number is found in the roster, otherwise just the name.
+      function getDisplayNameWithJersey(playerName, schoolValue) {
+        const roster = getRosterForSchool(schoolValue);
+        const match = roster.find(p =>
+          (p?.name || "").trim().toLowerCase() === (playerName || "").trim().toLowerCase()
+        );
+        const hasNumber = match && (
+          match.number === 0 || match.number === "0" ||
+          (match.number !== null && match.number !== undefined && String(match.number).trim() !== "")
+        );
+        return hasNumber ? `[${match.number}] ${playerName}` : (playerName || "Unknown pitcher");
+      }
+
 
       // Utility: create <option> list for a player select
       function buildPlayerOptions(selectEl, players, placeholder = "Select player…") {
@@ -803,7 +816,7 @@
           row.innerHTML =
             '<div class="pitcher-main">' +
             '  <div class="pitcher-name">' +
-            (p.name || "Unknown pitcher") +
+            getDisplayNameWithJersey(p.name, p.schoolValue) +
             "</div>" +
             '  <div class="pitcher-details">' +
             (teamLabel ? teamLabel + " · " : "") +
