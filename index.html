@@ -1930,9 +1930,24 @@ function resetSelectToFirst(id, { disabled, keepFirstOnly } = {}) {
       const idx = block.dataset.gameIndex;
       const locationVal = block.querySelector(`input[name="opponentLocation-${idx}"]:checked`)?.value || 'in-state';
       if (locationVal === 'in-state') {
+        const divEl  = document.getElementById(`opponentDivision-${idx}`);
+        const regEl  = document.getElementById(`opponentRegion-${idx}`);
         const teamEl = document.getElementById(`opponentTeam-${idx}`);
+        if (!divEl || !divEl.value) {
+          return { message: `Please select a division for the opponent in game ${idx}.`, el: divEl || block.querySelector('.opponentSelectors') };
+        }
+        if (!regEl || !regEl.value) {
+          return { message: `Please select a region for the opponent in game ${idx}.`, el: regEl };
+        }
         if (!teamEl || !teamEl.value) {
-          return { message: `Please select an opponent team for game ${idx}.`, el: teamEl || block.querySelector('.opponentSelectors') };
+          return { message: `Please select an opponent team for game ${idx}.`, el: teamEl };
+        }
+        // Check opponent is not the same as the submitting team
+        if (submittingTeamMeta &&
+            divEl.value  === submittingTeamMeta.division &&
+            regEl.value  === submittingTeamMeta.region &&
+            teamEl.value === (submittingTeamMeta.teamValue || submittingTeamMeta.teamName)) {
+          return { message: `The opponent for game ${idx} cannot be your own team. Please select a different team.`, el: teamEl };
         }
       } else {
         const manualInput = document.getElementById(`opponentSchoolManual-${idx}`);
@@ -2046,9 +2061,20 @@ function resetSelectToFirst(id, { disabled, keepFirstOnly } = {}) {
       const idx = block.dataset.gameIndex;
       const locationVal = block.querySelector(`input[name="opponentLocation-${idx}"]:checked`)?.value || 'in-state';
       if (locationVal === 'in-state') {
+        const divEl  = document.getElementById(`opponentDivision-${idx}`);
+        const regEl  = document.getElementById(`opponentRegion-${idx}`);
         const teamEl = document.getElementById(`opponentTeam-${idx}`);
-        if (!teamEl || !teamEl.value) {
-          issues.push({ message: `Please select an opponent team for game ${idx}.`, el: teamEl || block.querySelector('.opponentSelectors') });
+        if (!divEl || !divEl.value) {
+          issues.push({ message: `Please select a division for the opponent in game ${idx}.`, el: divEl || block.querySelector('.opponentSelectors') });
+        } else if (!regEl || !regEl.value) {
+          issues.push({ message: `Please select a region for the opponent in game ${idx}.`, el: regEl });
+        } else if (!teamEl || !teamEl.value) {
+          issues.push({ message: `Please select an opponent team for game ${idx}.`, el: teamEl });
+        } else if (submittingTeamMeta &&
+            divEl.value  === submittingTeamMeta.division &&
+            regEl.value  === submittingTeamMeta.region &&
+            teamEl.value === (submittingTeamMeta.teamValue || submittingTeamMeta.teamName)) {
+          issues.push({ message: `The opponent for game ${idx} cannot be your own team. Please select a different team.`, el: teamEl });
         }
       } else {
         const manualInput = document.getElementById(`opponentSchoolManual-${idx}`);
